@@ -34,7 +34,7 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
     for i:=0;i<nbond1;i++ {
         m.Bond2type[i]   = 0
         m.Bond2hNspin[i] = 1
-        m.Bond2weight[i] = hx
+        m.Bond2weight[i] = hx*0.5
         m.Bond2index[i] = []int{i}
     }
     n:=nbond1
@@ -45,7 +45,7 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
 
             m.Bond2type[n]   = 1
             m.Bond2hNspin[n] = 2
-            m.Bond2weight[n] = 1.0
+            m.Bond2weight[n] = 0.5
             m.Bond2index[n]  = []int{i,j}
             n++
         }
@@ -57,7 +57,7 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
 
             m.Bond2type[n]   = 1
             m.Bond2hNspin[n] = 2
-            m.Bond2weight[n] = 1.0
+            m.Bond2weight[n] = 0.5
             m.Bond2index[n]  = []int{i,j}
             n++
         }
