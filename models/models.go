@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
     "fmt"
@@ -16,6 +16,7 @@ type Model struct {
     InsertRule []func([]int)bool
     Nsite int
     Nbond int
+    Tweight float64
 }
 
 
@@ -30,11 +31,13 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
     m.Bond2hNspin = make([]int,nbond)
     m.Bond2weight = make([]float64,nbond)
     m.Bond2index = make([][]int,nbond)
+    m.Tweight = 0
 
     for i:=0;i<nbond1;i++ {
         m.Bond2type[i]   = 0
         m.Bond2hNspin[i] = 1
         m.Bond2weight[i] = hx*0.5
+        m.Tweight += hx*0.5
         m.Bond2index[i] = []int{i}
     }
     n:=nbond1
@@ -46,6 +49,7 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
             m.Bond2type[n]   = 1
             m.Bond2hNspin[n] = 2
             m.Bond2weight[n] = 0.5
+            m.Tweight += 0.5
             m.Bond2index[n]  = []int{i,j}
             n++
         }
@@ -58,6 +62,7 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
             m.Bond2type[n]   = 1
             m.Bond2hNspin[n] = 2
             m.Bond2weight[n] = 0.5
+            m.Tweight += 0.5
             m.Bond2index[n]  = []int{i,j}
             n++
         }
@@ -78,7 +83,7 @@ func IsingTFSquare(lx int, ly int, hx float64) Model {
     return m
 }
 
-func main() {
+func test_models() {
     m := IsingTFSquare(4,4,1.5)
 
     fmt.Printf("%v\n",m)
