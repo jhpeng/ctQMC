@@ -4,20 +4,8 @@ import (
     "fmt"
     "github.com/jhpeng/ctQMC/models/link_rule"
     "github.com/jhpeng/ctQMC/models/insert_rule"
+    . "github.com/jhpeng/ctQMC/dtype"
 )
-
-
-type Model struct {
-    Bond2type []int
-    Bond2hNspin []int
-    Bond2weight []float64
-    Bond2index [][]int
-    LinkRule [][]int
-    InsertRule []func([]int)bool
-    Nsite int
-    Nbond int
-    Tweight float64
-}
 
 
 func IsingTFSquare(lx int, ly int, hx float64) Model {
