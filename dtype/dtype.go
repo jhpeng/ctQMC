@@ -18,4 +18,20 @@ type Model struct {
     Tweight float64
 }
 
+type Vertex struct {
+    Bond int
+    HNspin int
+    State []int
+}
+
+type WorldLine struct {
+    Table map[uint64]Vertex
+    SequenceA []uint64
+    SequenceB []uint64
+    Nvertices int
+    Flag bool                 //true -> SequenceA; false -> SequenceB
+    State []int
+    Nsite int
+    Beta float64
+}
 
