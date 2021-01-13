@@ -23,7 +23,7 @@ func Compress(p map[Id]Id, v Id, r Id) {
     }
 }
 
-func Union(p map[Id]Id, w map[Id]uint64, va Id, vb Id){
+func Union(p map[Id]Id, w map[Id]int, va Id, vb Id){
     ra := Root(p,va)
     rb := Root(p,vb)
     r0 := ra
@@ -51,7 +51,7 @@ func test() {
     v7 := Id{Key:7, I:0}
 
     p := make(map[Id]Id)
-    w := make(map[Id]uint64)
+    w := make(map[Id]int)
 
     p[v0] = v0
     p[v1] = v1

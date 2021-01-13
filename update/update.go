@@ -4,6 +4,7 @@ import (
     "fmt"
     "math"
     "math/rand"
+    "github.com/jhpeng/ctQMC/update/cluster"
     . "github.com/jhpeng/ctQMC/dtype"
 )
 
@@ -18,6 +19,33 @@ func pointSamplingWeighted(t float64, w []float64) int {
     }
     fmt.Printf("pointSamplingWeighted : out of range!\n")
     return len(w)
+}
+
+var cmf []float64
+func pointSamplingWeighted2(t float64, w []float64) int {
+    dis := rand.Float64()*t
+
+    if cmf==nil {
+        cmf    = make([]float64, len(w))
+        cmf[0] = w[0]
+        for i:=1;i<len(w);i++ {
+            cmf[i] = cmf[i-1]+w[i]
+        }
+    }
+
+    i:=0
+    j:=len(cmf)
+    d:=j-i
+    for d>1 {
+        if dis > cmf[i+d/2] {
+            i = i+d/2
+        } else {
+            j = i+d/2
+        }
+        d = j-i
+    }
+
+    return i
 }
 
 var MaxKeyFromSample uint64 = 1000000000000000 // 10E15
@@ -36,7 +64,7 @@ func squenceSamplingUniform(lambda float64) []uint64{
     return sequence
 }
 
-func Remove(w WorldLine) {
+func Remove(w WorldLine) WorldLine{
     var key uint64
     var v   Vertex
 
@@ -68,9 +96,11 @@ func Remove(w WorldLine) {
     }
     w.Nvertices = k
     w.Flag = !(w.Flag)
+
+    return w
 }
 
-func Insert(w WorldLine, m Model) {
+func Insert(w WorldLine, m Model) WorldLine{
     lambda := (m.Tweight)*(w.Beta)
     insert_seq := squenceSamplingUniform(lambda)
 
@@ -116,7 +146,7 @@ func Insert(w WorldLine, m Model) {
         }
 
         if key1!=key2 {
-            bond := pointSamplingWeighted(m.Tweight,m.Bond2weight)
+            bond := pointSamplingWeighted2(m.Tweight,m.Bond2weight)
             t := m.Bond2type[bond]
             indices := m.Bond2index[bond]
             hNspin := m.Bond2hNspin[bond]
@@ -149,4 +179,117 @@ func Insert(w WorldLine, m Model) {
 
     w.Nvertices = n
     w.Flag = !(w.Flag)
+
+    return w
+}
+
+func InnerLink(w WorldLine, m Model) (map[Id]Id, map[Id]int) {
+    p := make(map[Id]Id)
+    c := make(map[Id]int)
+
+    sequence := w.SequenceB
+    if w.Flag {
+        sequence = w.SequenceA
+    }
+
+    for i:=0;i<w.Nvertices;i++ {
+        key    := sequence[i]
+        v      := w.Table[key]
+        bond   := v.Bond
+        hNspin := v.HNspin
+        t      := m.Bond2type[bond]
+        rule   := m.LinkRule[t]
+
+        for j:=0;j<2*hNspin;j++ {
+            idn := Id{Key:key, I:j}
+            idv := Id{Key:key, I:rule[j]}
+            p[idn] = idv
+            c[idn] = rule[j+2*hNspin]
+        }
+    }
+
+    return p,c
+}
+
+var null Id = Id{Key:0, I:-1}
+
+func OuterLink(w WorldLine, m Model, p map[Id]Id, c map[Id]int) {
+    last  := w.Last
+    first := w.First
+
+    for i:=0;i<w.Nsite;i++ {
+        last[i] = null
+        first[i] = null
+    }
+
+    sequence := w.SequenceB
+    if w.Flag {
+        sequence = w.SequenceA
+    }
+
+    for i:=0;i<w.Nvertices;i++ {
+        key     := sequence[i]
+        v       := w.Table[key]
+        bond    := v.Bond
+        hNspin  := v.HNspin
+        indices := m.Bond2index[bond]
+
+        for j:=0;j<hNspin;j++ {
+            index := indices[j]
+            idp := Id{Key:key, I:j}
+            idn := Id{Key:key, I:j+hNspin}
+            if first[index]==null {
+                first[index] = idp
+                last[index]  = idn
+            } else {
+                cluster.Union(p,c,last[index],idp)
+                last[index] = idn
+            }
+        }
+    }
+}
+
+func FlipCluster(w WorldLine, p map[Id]Id) {
+    newState := make(map[Id]int)
+    first    := w.First
+
+    sequence := w.SequenceB
+    if w.Flag {
+        sequence = w.SequenceA
+    }
+
+    for i:=0;i<w.Nvertices;i++ {
+        key     := sequence[i]
+        v       := w.Table[key]
+        hNspin  := v.HNspin
+        state   := v.State
+
+        for j:=0;j<2*hNspin;j++ {
+            idv := Id{Key:key, I:j}
+            idr := cluster.Root(p,idv)
+            if newState[idr]==0 {
+                newState[idr] = 1
+                if rand.Float64()<0.5 {
+                    newState[idr]=-1
+                }
+            }
+
+            state[j] = newState[idr]
+        }
+    }
+
+    for i:=0;i<w.Nsite;i++ {
+        id  := first[i]
+        if id!=null {
+            key := id.Key
+            j   := id.I
+
+            v := w.Table[key]
+            w.State[i] = v.State[j]
+        } else if rand.Float64()<0.5 {
+            w.State[i] =  1
+        } else {
+            w.State[i] = -1
+        }
+    }
 }
