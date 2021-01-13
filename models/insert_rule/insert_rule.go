@@ -6,7 +6,7 @@ func InsertRuleIsing1(state []int) bool {
 }
 
 func InsertRuleIsing2(state []int) bool {
-    if state[0]*state[1]==0{
+    if state[0]*state[1]==1{
         return true
     } else {
         return false

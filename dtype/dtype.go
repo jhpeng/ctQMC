@@ -31,6 +31,8 @@ type WorldLine struct {
     Nvertices int
     Flag bool                 //true -> SequenceA; false -> SequenceB
     State []int
+    Last  []Id
+    First []Id
     Nsite int
     Beta float64
 }

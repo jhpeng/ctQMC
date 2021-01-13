@@ -1,4 +1,4 @@
-package main
+package update
 
 import (
     "fmt"
@@ -149,9 +149,4 @@ func Insert(w WorldLine, m Model) {
 
     w.Nvertices = n
     w.Flag = !(w.Flag)
-}
-
-func main() {
-    a := make([]int,65)
-    fmt.Println(len(a),cap(a))
 }
