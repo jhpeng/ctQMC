@@ -49,14 +49,14 @@ func pointSamplingWeighted2(t float64, w []float64) int {
 }
 
 var MaxKeyFromSample uint64 = 1000000000000000 // 10E15
-func squenceSamplingUniform(lambda float64) []uint64{
+func squenceSamplingUniform(lambda float64, start uint64) []uint64{
     var sequence []uint64
     var k float64 = 0
 
     dis := rand.Float64()
     k -= math.Log(dis)/lambda
     for k<1.0 {
-        sequence = append(sequence,uint64(k*float64(MaxKeyFromSample)))
+        sequence = append(sequence,uint64(k*float64(MaxKeyFromSample))+start)
         dis = rand.Float64()
         k -= math.Log(dis)/lambda
     }
@@ -102,7 +102,7 @@ func Remove(w WorldLine) WorldLine{
 
 func Insert(w WorldLine, m Model) WorldLine{
     lambda := (m.Tweight)*(w.Beta)
-    insert_seq := squenceSamplingUniform(lambda)
+    insert_seq := squenceSamplingUniform(lambda,0)
 
     length := len(insert_seq)+w.Nvertices+1024
     if length>len(w.SequenceA) {
@@ -245,6 +245,12 @@ func OuterLink(w WorldLine, m Model, p map[Id]Id, c map[Id]int) {
                 cluster.Union(p,c,last[index],idp)
                 last[index] = idn
             }
+        }
+    }
+
+    for i:=0;i<w.Nsite;i++ {
+        if first[i]!=null {
+            cluster.Union(p,c,first[i],last[i])
         }
     }
 }
