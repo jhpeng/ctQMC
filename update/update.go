@@ -22,18 +22,22 @@ func pointSamplingWeighted(t float64, w []float64) int {
 }
 
 var cmf []float64
+var count []uint64
 func pointSamplingWeighted2(t float64, w []float64) int {
     dis := rand.Float64()*t
 
     if cmf==nil {
         cmf    = make([]float64, len(w))
+        count  = make([]uint64,  len(w))
         cmf[0] = w[0]
+        count[0] = 0
         for i:=1;i<len(w);i++ {
             cmf[i] = cmf[i-1]+w[i]
+            count[i] = 0
         }
     }
 
-    i:=0
+    i:=-1
     j:=len(cmf)
     d:=j-i
     for d>1 {
@@ -45,7 +49,9 @@ func pointSamplingWeighted2(t float64, w []float64) int {
         d = j-i
     }
 
-    return i
+    count[j]++
+
+    return j
 }
 
 var MaxKeyFromSample uint64 = 1000000000000000 // 10E15
@@ -280,7 +286,7 @@ func FlipCluster(w WorldLine, p map[Id]Id) {
                 }
             }
 
-            state[j] = newState[idr]
+            state[j] = state[j]*newState[idr]
         }
     }
 
