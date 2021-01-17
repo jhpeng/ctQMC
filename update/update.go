@@ -305,3 +305,41 @@ func FlipCluster(w WorldLine, p map[Id]Id) {
         }
     }
 }
+
+func CheckPeriodic(w WorldLine, m Model) bool {
+    sequence := w.SequenceB
+    if w.Flag {
+        sequence = w.SequenceA
+    }
+
+    pstate := make([]int,w.Nsite)
+    for i:=0;i<w.Nsite;i++ {
+        pstate[i] = w.State[i]
+    }
+
+    for i:=0;i<w.Nvertices;i++ {
+        key     := sequence[i]
+        v       := w.Table[key]
+        bond    := v.Bond
+        hNspin  := v.HNspin
+        indices := m.Bond2index[bond]
+
+        for j:=0;j<hNspin;j++ {
+            i_site := indices[j]
+            if pstate[i_site]!=v.State[j]{
+                fmt.Printf("something wrong!\n")
+            }
+            pstate[i_site] = v.State[hNspin+j]
+        }
+    }
+
+    check := true
+    for i:=0;i<w.Nsite;i++ {
+        if pstate[i]!=w.State[i] {
+            check = false
+        }
+    }
+
+    return check
+}
+

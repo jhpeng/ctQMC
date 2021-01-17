@@ -4,10 +4,18 @@ import (
     "fmt"
     "time"
     //"runtime"
+    "math"
     "math/rand"
     "github.com/jhpeng/ctQMC/models"
     "github.com/jhpeng/ctQMC/update"
     . "github.com/jhpeng/ctQMC/dtype"
+)
+
+var (
+    lx int
+    ly int
+    beta float64
+    q3 float64
 )
 
 func numberOfGraphs(w WorldLine, m Model) {
@@ -38,54 +46,89 @@ func numberOfGraphs(w WorldLine, m Model) {
     fmt.Printf("n0=%v n1=%v\n",n0,n1)
 }
 
-func checkPeriodic(w WorldLine, m Model) bool {
+var staggeredStructure []float64
+func measurement(w WorldLine, m Model) {
+    var key uint64
+
+    if staggeredStructure==nil {
+        staggeredStructure = make([]float64,w.Nsite)
+        for j:=0;j<ly;j++ {
+            for i:=0;i<lx;i++ {
+                i_site := i+j*lx
+                staggeredStructure[i_site] = float64(((i+j)%2)*2-1)
+            }
+        }
+    }
+
+    var ( 
+        mz float64 = 0
+        ms float64 = 0
+        msx float64 = 0
+        ms1 float64 = 0
+        ms2 float64 = 0
+        ms4 float64 = 0
+        chiu float64 = 0
+    )
+
+    for i:=0;i<w.Nsite;i++ {
+        mz += float64(w.State[i])
+        ms += float64(w.State[i])*staggeredStructure[i]
+    }
+
     sequence := w.SequenceB
     if w.Flag {
         sequence = w.SequenceA
     }
 
-    pstate := make([]int,w.Nsite)
-    for i:=0;i<w.Nsite;i++ {
-        pstate[i] = w.State[i]
-    }
-
     for i:=0;i<w.Nvertices;i++ {
-        key     := sequence[i]
+        key      = sequence[i]
         v       := w.Table[key]
         bond    := v.Bond
         hNspin  := v.HNspin
+        state   := v.State
         indices := m.Bond2index[bond]
 
         for j:=0;j<hNspin;j++ {
             i_site := indices[j]
-            if pstate[i_site]!=v.State[j]{
-                fmt.Printf("something wrong!\n")
-            }
-            pstate[i_site] = v.State[hNspin+j]
+            dif    := float64((state[j]*state[j+hNspin]-1)*state[j])
+            ms += staggeredStructure[i_site]*dif
         }
+        msx += ms
+        ms1 += math.Abs(ms)
+        ms2 += ms*ms
+        ms4 += ms*ms*ms*ms
     }
 
-    check := true
-    for i:=0;i<w.Nsite;i++ {
-        if pstate[i]!=w.State[i] {
-            check = false
-        }
+    l   := float64(w.Nvertices)
+    vol := float64(w.Nsite)
+
+    chiu = mz*mz/float64(w.Nsite)*beta*0.25
+    if w.Nvertices!=0 {
+        msx = beta*(msx*msx+ms2)/l/(l+1)/vol*0.25
+        ms1 = ms1*0.5/vol/l
+        ms2 = ms2*0.25/vol/vol/l
+        ms4 = ms4*0.0625/vol/vol/vol/vol/l
+    } else {
+        msx = beta*ms*ms/2.0/vol*0.25
+        ms1 = math.Abs(ms)*0.5/vol
+        ms2 = ms*ms*0.25/vol/vol
+        ms4 = ms*ms*ms*ms/0.0625/vol/vol/vol/vol
     }
 
-    return check
+    fmt.Println(chiu,msx,ms1,ms2,ms4)
 }
 
 func main() {
     var w WorldLine
-    x := 32
-    y := 32
-    beta := 64.0
-    q := 1.5
+    lx   = 32
+    ly   = 32
+    beta = 10.0
+    q3   = 1.5
     seed := int64(32901)
 
     rand.Seed(seed)
 
-    m := models.JQ3LadderSquare(x,y,q)
+    m := models.JQ3LadderSquare(lx,ly,q3)
     //fmt.Println(m)
 
     w.Table = make(map[uint64]Vertex)
@@ -121,6 +164,7 @@ func main() {
         if t3.Sub(t)>time.Second {
             t = time.Now()
             fmt.Printf("noo=%v %v %v nsweep=%v\n",w.Nvertices,t2.Sub(t1),t3.Sub(t2),n)
+            measurement(w,m)
             //numberOfGraphs(w,m)
         }
         //if !checkPeriodic(w,m) {
