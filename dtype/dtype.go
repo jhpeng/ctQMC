@@ -37,3 +37,8 @@ type WorldLine struct {
     Beta float64
 }
 
+type Estimator struct {
+    Name string
+    Sample []float64
+    N int
+}

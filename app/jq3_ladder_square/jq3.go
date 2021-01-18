@@ -8,6 +8,7 @@ import (
     "math/rand"
     "github.com/jhpeng/ctQMC/models"
     "github.com/jhpeng/ctQMC/update"
+    "github.com/jhpeng/ctQMC/stats"
     . "github.com/jhpeng/ctQMC/dtype"
 )
 
@@ -47,7 +48,7 @@ func numberOfGraphs(w WorldLine, m Model) {
 }
 
 var staggeredStructure []float64
-func measurement(w WorldLine, m Model) {
+func measurement(w WorldLine, m Model, samples []Estimator) {
     var key uint64
 
     if staggeredStructure==nil {
@@ -115,7 +116,12 @@ func measurement(w WorldLine, m Model) {
         ms4 = ms*ms*ms*ms/0.0625/vol/vol/vol/vol
     }
 
-    fmt.Println(chiu,msx,ms1,ms2,ms4)
+    samples[0] = stats.Append(samples[0],ms1)
+    samples[1] = stats.Append(samples[1],ms2)
+    samples[2] = stats.Append(samples[2],ms4)
+    samples[3] = stats.Append(samples[3],msx)
+    samples[4] = stats.Append(samples[4],chiu)
+    samples[5] = stats.Append(samples[5],float64(w.Nvertices))
 }
 
 func main() {
@@ -124,7 +130,7 @@ func main() {
     ly   = 32
     beta = 10.0
     q3   = 1.5
-    seed := int64(32901)
+    seed := int64(783621)
 
     rand.Seed(seed)
 
@@ -143,6 +149,12 @@ func main() {
     w.Nsite = m.Nsite
     w.Beta = beta
 
+    samples := make([]Estimator,10)
+
+    for i:=0;i<10;i++ {
+        samples[i] = stats.New()
+    }
+
     for i:=0;i<w.Nsite;i++ {
         w.State[i] = 1
         if rand.Float64()<0.5 {
@@ -153,23 +165,27 @@ func main() {
     t := time.Now()
     n := 0
     for {
-        t1  := time.Now()
         w    = update.Remove(w)
         w    = update.Insert(w,m)
-        t2  := time.Now()
         p,c := update.InnerLink(w,m)
         update.OuterLink(w,m,p,c)
         update.FlipCluster(w,p)
-        t3 := time.Now()
-        if t3.Sub(t)>time.Second {
-            t = time.Now()
-            fmt.Printf("noo=%v %v %v nsweep=%v\n",w.Nvertices,t2.Sub(t1),t3.Sub(t2),n)
-            measurement(w,m)
-            //numberOfGraphs(w,m)
+
+        if n>1000 {
+            measurement(w,m,samples)
         }
-        //if !checkPeriodic(w,m) {
-        //    fmt.Printf("false!\n")
-        //}
+
+        if (n>1000) && (n%1000==0) {
+            t1 := time.Now()
+            fmt.Printf("--------------------------------------\n")
+            fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t1.Sub(t))
+            fmt.Printf("ms2  = %v\n",stats.Mean(samples[1]))
+            fmt.Printf("chis = %v\n",stats.Mean(samples[3]))
+            fmt.Printf("chiu = %v\n",stats.Mean(samples[4]))
+            fmt.Printf("noo  = %v\n",stats.Mean(samples[5]))
+            t = t1
+        }
+
         n++
     }
 }
