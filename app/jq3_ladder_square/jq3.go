@@ -3,7 +3,7 @@ package main
 import (
     "fmt"
     "time"
-    //"runtime"
+    "runtime"
     "math"
     "math/rand"
     "github.com/jhpeng/ctQMC/models"
@@ -18,6 +18,20 @@ var (
     beta float64
     q3 float64
 )
+
+func bToMb(b uint64) uint64 {
+    return b / 1024 / 1024
+}
+
+func PrintMemUsage() {
+    var m runtime.MemStats
+    runtime.ReadMemStats(&m)
+    // For info on each, see: https://golang.org/pkg/runtime/#MemStats
+    fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+    fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+    fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+    fmt.Printf("\tNumGC = %v\n", m.NumGC)
+}
 
 var staggeredStructure []float64
 func measurement(w WorldLine, m Model, samples []Estimator) {
@@ -95,7 +109,6 @@ func measurement(w WorldLine, m Model, samples []Estimator) {
 }
 
 func main() {
-    var w WorldLine
     lx   = 32
     ly   = 32
     beta = 10.0
@@ -105,22 +118,8 @@ func main() {
     rand.Seed(seed)
 
     m := models.JQ3LadderSquare(lx,ly,q3)
-    //fmt.Println(m)
 
-    length := 1024
-    w.SequenceA = make([]Vertex,length)
-    w.SequenceB = make([]Vertex,length)
-    w.Mnspin    = 12
-    w.Cluster   = make([]int,w.Mnspin*length)
-    w.Weight    = make([]int,w.Mnspin*length)
-
-    w.Nvertices = 0
-    w.Flag  = true
-    w.State = make([]int,m.Nsite)
-    w.Last  = make([]int,m.Nsite)
-    w.First = make([]int,m.Nsite)
-    w.Nsite = m.Nsite
-    w.Beta = beta
+    w := update.NewWorldLine(12,m.Nsite,beta)
 
     samples := make([]Estimator,10)
 
@@ -158,6 +157,7 @@ func main() {
             if t2.Sub(t1)>1*time.Minute {
                 t1 = time.Now()
                 fmt.Printf("===========================================\n")
+                PrintMemUsage()
                 fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t2.Sub(t0))
                 stats.PrintDetail(samples[1])
                 stats.PrintDetail(samples[3])

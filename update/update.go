@@ -57,6 +57,27 @@ func squenceSamplingUniform(lambda float64, start uint64) []uint64{
     return sequence
 }
 
+func NewWorldLine(mnspin int, nsite int, beta float64) WorldLine {
+    var w WorldLine
+
+    length := 1024
+    w.SequenceA = make([]Vertex,length)
+    w.SequenceB = make([]Vertex,length)
+    w.Mnspin    = mnspin
+    w.Cluster   = make([]int,mnspin*length)
+    w.Weight    = make([]int,mnspin*length)
+
+    w.Nvertices = 0
+    w.Flag  = true
+    w.State = make([]int,nsite)
+    w.Last  = make([]int,nsite)
+    w.First = make([]int,nsite)
+    w.Nsite = nsite
+    w.Beta = beta
+
+    return w
+}
+
 func Remove(w WorldLine) WorldLine{
     var v   Vertex
 
