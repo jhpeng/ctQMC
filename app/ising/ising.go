@@ -49,15 +49,18 @@ func main() {
 
     m := models.IsingTFSquare(x,y,0.5)
 
-    w.Table = make(map[uint64]Vertex)
-    w.SequenceA = make([]uint64,2048)
-    w.SequenceB = make([]uint64,2048)
+    length := 2048
+    w.SequenceA = make([]Vertex,length)
+    w.SequenceB = make([]Vertex,length)
+    w.Mnspin    = 4
+    w.Cluster   = make([]int,w.Mnspin*length)
+    w.Weight    = make([]int,w.Mnspin*length)
 
     w.Nvertices = 0
     w.Flag  = true
     w.State = make([]int,m.Nsite)
-    w.Last  = make([]Id,m.Nsite)
-    w.First = make([]Id,m.Nsite)
+    w.Last  = make([]int,m.Nsite)
+    w.First = make([]int,m.Nsite)
     w.Nsite = m.Nsite
     w.Beta = beta
 
@@ -73,9 +76,9 @@ func main() {
         w = update.Remove(w)
         w = update.Insert(w,m)
         t2 := time.Now()
-        p,c := update.InnerLink(w,m)
-        update.OuterLink(w,m,p,c)
-        update.FlipCluster(w,p)
+        update.InnerLink(w,m)
+        update.OuterLink(w,m)
+        update.FlipCluster(w)
         t3 := time.Now()
         fmt.Printf("%v %v %v\n",w.Nvertices,t2.Sub(t1),t3.Sub(t2))
         measurement(w)
