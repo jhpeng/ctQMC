@@ -19,37 +19,8 @@ var (
     q3 float64
 )
 
-func numberOfGraphs(w WorldLine, m Model) {
-    var key uint64
-
-    sequence := w.SequenceB
-    if w.Flag {
-        sequence = w.SequenceA
-    }
-
-    n0:=0
-    n1:=0
-
-    for i:=0;i<w.Nvertices;i++ {
-        key = sequence[i]
-        v    := w.Table[key]
-        bond := v.Bond
-        t    := m.Bond2type[bond]
-        if t==0 {
-            n0++
-        } else if t==1 {
-            n1++
-        } else {
-            fmt.Printf("something wrong!\n")
-        }
-    }
-
-    fmt.Printf("n0=%v n1=%v\n",n0,n1)
-}
-
 var staggeredStructure []float64
 func measurement(w WorldLine, m Model, samples []Estimator) {
-    var key uint64
 
     if staggeredStructure==nil {
         staggeredStructure = make([]float64,w.Nsite)
@@ -61,7 +32,7 @@ func measurement(w WorldLine, m Model, samples []Estimator) {
         }
     }
 
-    var ( 
+    var (
         mz float64 = 0
         ms float64 = 0
         msx float64 = 0
@@ -82,8 +53,7 @@ func measurement(w WorldLine, m Model, samples []Estimator) {
     }
 
     for i:=0;i<w.Nvertices;i++ {
-        key      = sequence[i]
-        v       := w.Table[key]
+        v       := sequence[i]
         bond    := v.Bond
         hNspin  := v.HNspin
         state   := v.State
@@ -137,15 +107,18 @@ func main() {
     m := models.JQ3LadderSquare(lx,ly,q3)
     //fmt.Println(m)
 
-    w.Table = make(map[uint64]Vertex)
-    w.SequenceA = make([]uint64,2048)
-    w.SequenceB = make([]uint64,2048)
+    length := 1024
+    w.SequenceA = make([]Vertex,length)
+    w.SequenceB = make([]Vertex,length)
+    w.Mnspin    = 12
+    w.Cluster   = make([]int,w.Mnspin*length)
+    w.Weight    = make([]int,w.Mnspin*length)
 
     w.Nvertices = 0
     w.Flag  = true
     w.State = make([]int,m.Nsite)
-    w.Last  = make([]Id,m.Nsite)
-    w.First = make([]Id,m.Nsite)
+    w.Last  = make([]int,m.Nsite)
+    w.First = make([]int,m.Nsite)
     w.Nsite = m.Nsite
     w.Beta = beta
 
@@ -172,17 +145,17 @@ func main() {
     t1 := time.Now()
     n := 0
     for {
-        w    = update.Remove(w)
-        w    = update.Insert(w,m)
-        p,c := update.InnerLink(w,m)
-        update.OuterLink(w,m,p,c)
-        update.FlipCluster(w,p)
+        w = update.Remove(w)
+        w = update.Insert(w,m)
+        update.InnerLink(w,m)
+        update.OuterLink(w,m)
+        update.FlipCluster(w)
 
         if n>2000 {
             measurement(w,m,samples)
             t2 := time.Now()
 
-            if t2.Sub(t1)>10*time.Minute {
+            if t2.Sub(t1)>1*time.Minute {
                 t1 = time.Now()
                 fmt.Printf("===========================================\n")
                 fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t2.Sub(t0))
