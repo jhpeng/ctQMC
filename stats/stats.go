@@ -11,6 +11,9 @@ func New() Estimator {
 
     est.Sample = make([]float64,100000)
     est.N = 0
+    est.Block  = make([]float64,1024)
+    est.Bsize  = 2
+    est.Nblock = 0
 
     return est
 }
@@ -25,23 +28,24 @@ func Append(est Estimator, sample float64) Estimator {
     est.Sample[est.N] = sample
     est.N++
 
-    return est
-}
-
-func Cut(est Estimator, length int) Estimator {
-    temp := make([]float64,len(est.Sample))
-
-    if length<est.N {
-        n:=0
-        for i:=length;i<est.N;i++ {
-            temp[n] = est.Sample[i]
-            n++
+    if est.N==est.Bsize*(est.Nblock+1) {
+        var b float64 = 0
+        for i:=0;i<est.Bsize;i++ {
+            b += est.Sample[est.Nblock*est.Bsize+i]
         }
-        est.N = n
-    } else {
-        est.N = 0
+        b = b/float64(est.Bsize)
+        est.Block[est.Nblock] = b
+        est.Nblock++
+
+        if est.Nblock==1024 {
+            for i:=0;i<512;i++ {
+                est.Block[i] = est.Block[2*i]+est.Block[2*i+1]
+                est.Block[i] = est.Block[i]*0.5
+            }
+            est.Nblock = 512
+            est.Bsize *= 2
+        }
     }
-    est.Sample = temp
 
     return est
 }
@@ -70,6 +74,63 @@ func Std(est Estimator) float64 {
 
     return std
 }
+
+func MeanBlock(est Estimator) float64 {
+    var mean float64 = 0
+
+    for i:=0;i<est.Nblock;i++ {
+        mean += est.Block[i]
+    }
+    mean = mean/float64(est.Nblock)
+
+    return mean
+}
+
+func StdBlock(est Estimator) float64 {
+    var std float64 = 0
+    var div float64 = 0
+    mean := MeanBlock(est)
+
+    for i:=0;i<est.Nblock;i++ {
+        div = est.Block[i]-mean
+        std += div*div
+    }
+    std = math.Sqrt(std/float64(est.Nblock))
+
+    return std
+}
+
+func StdError(est Estimator) float64 {
+    return StdBlock(est)/math.Sqrt(float64(est.Nblock-1))
+}
+
+func PrintDetail(est Estimator) {
+    mean := MeanBlock(est)
+    err  := StdError(est)
+    std  := Std(est)
+
+    std2 := std*std
+    tau  := err*err/std2*float64(est.N)
+    tau   = (tau-1)*0.5
+
+    fmt.Printf("------------------------ \n")
+    fmt.Printf("Observable : %s \n",est.Name)
+    fmt.Printf("Nblock=%v Bsize=%v \n",est.Nblock,est.Bsize)
+    fmt.Printf("mean      = %e \n",mean)
+    fmt.Printf("std error = %e \n",err)
+    fmt.Printf("std div   = %e \n",std)
+    fmt.Printf("cor time  = %e \n",tau)
+}
+
+
+
+
+
+
+
+
+
+
 
 // <x_i * x_{i+dist}>
 // n = N-dist
@@ -107,3 +168,4 @@ func AutocorrelationTime(est Estimator) float64 {
 
     return tau
 }
+

@@ -130,7 +130,7 @@ func main() {
     ly   = 32
     beta = 10.0
     q3   = 1.5
-    seed := int64(783621)
+    seed := int64(84686)
 
     rand.Seed(seed)
 
@@ -154,6 +154,12 @@ func main() {
     for i:=0;i<10;i++ {
         samples[i] = stats.New()
     }
+    (samples[0]).Name = "ms1"
+    (samples[1]).Name = "ms2"
+    (samples[2]).Name = "ms4"
+    (samples[3]).Name = "Xs"
+    (samples[4]).Name = "Xu"
+    (samples[5]).Name = "Noo"
 
     for i:=0;i<w.Nsite;i++ {
         w.State[i] = 1
@@ -162,7 +168,8 @@ func main() {
         }
     }
 
-    t := time.Now()
+    t0 := time.Now()
+    t1 := time.Now()
     n := 0
     for {
         w    = update.Remove(w)
@@ -171,19 +178,19 @@ func main() {
         update.OuterLink(w,m,p,c)
         update.FlipCluster(w,p)
 
-        if n>1000 {
+        if n>2000 {
             measurement(w,m,samples)
-        }
+            t2 := time.Now()
 
-        if (n>1000) && (n%1000==0) {
-            t1 := time.Now()
-            fmt.Printf("--------------------------------------\n")
-            fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t1.Sub(t))
-            fmt.Printf("ms2  = %v\n",stats.Mean(samples[1]))
-            fmt.Printf("chis = %v\n",stats.Mean(samples[3]))
-            fmt.Printf("chiu = %v\n",stats.Mean(samples[4]))
-            fmt.Printf("noo  = %v\n",stats.Mean(samples[5]))
-            t = t1
+            if t2.Sub(t1)>10*time.Minute {
+                t1 = time.Now()
+                fmt.Printf("===========================================\n")
+                fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t2.Sub(t0))
+                stats.PrintDetail(samples[1])
+                stats.PrintDetail(samples[3])
+                stats.PrintDetail(samples[4])
+                stats.PrintDetail(samples[5])
+            }
         }
 
         n++

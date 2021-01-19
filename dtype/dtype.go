@@ -41,4 +41,7 @@ type Estimator struct {
     Name string
     Sample []float64
     N int
+    Block  []float64
+    Bsize  int
+    Nblock int
 }
