@@ -1,11 +1,5 @@
 package dtype
 
-
-type Id struct {
-    Key uint64
-    I int
-}
-
 type Model struct {
     Bond2type []int
     Bond2hNspin []int
@@ -19,22 +13,25 @@ type Model struct {
 }
 
 type Vertex struct {
+    Key uint64
     Bond int
     HNspin int
     State []int
 }
 
 type WorldLine struct {
-    Table map[uint64]Vertex
-    SequenceA []uint64
-    SequenceB []uint64
-    Nvertices int
-    Flag bool                 //true -> SequenceA; false -> SequenceB
-    State []int
-    Last  []Id
-    First []Id
-    Nsite int
-    Beta float64
+    SequenceA []Vertex
+    SequenceB []Vertex
+    Cluster   []int
+    Weight    []int
+    Nvertices   int
+    Mnspin      int
+    Flag        bool        //true -> SequenceA; false -> SequenceB
+    State     []int
+    Last      []int
+    First     []int
+    Nsite       int
+    Beta        float64
 }
 
 type Estimator struct {
