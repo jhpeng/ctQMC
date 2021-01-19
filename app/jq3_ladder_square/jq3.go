@@ -142,22 +142,34 @@ func main() {
 
     t0 := time.Now()
     t1 := time.Now()
+    d0 := time.Second*0
+    d1 := time.Second*0
+    d2 := time.Second*0
     n := 0
     for {
+        start := time.Now()
         w = update.Remove(w)
         w = update.Insert(w,m)
+        end_graph := time.Now()
         update.InnerLink(w,m)
         update.OuterLink(w,m)
         update.FlipCluster(w)
+        end_conf  := time.Now()
+
+        d0 += end_graph.Sub(start)
+        d1 += end_conf.Sub(end_graph)
 
         if n>2000 {
+            end_conf = time.Now()
             measurement(w,m,samples)
             t2 := time.Now()
+            d2 += t2.Sub(end_conf)
 
             if t2.Sub(t1)>1*time.Minute {
                 t1 = time.Now()
                 fmt.Printf("===========================================\n")
                 PrintMemUsage()
+                fmt.Printf("updating graphs : %v ,  updating configuration : %v ,  measurement : %v\n",d0,d1,d2)
                 fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t2.Sub(t0))
                 stats.PrintDetail(samples[1])
                 stats.PrintDetail(samples[3])

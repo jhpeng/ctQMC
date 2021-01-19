@@ -39,7 +39,6 @@ func measurement(w WorldLine) {
 }
 
 func main() {
-    var w WorldLine
     x := 1024
     y := 1024
     seed := int64(329012)
@@ -49,20 +48,7 @@ func main() {
 
     m := models.IsingTFSquare(x,y,0.5)
 
-    length := 2048
-    w.SequenceA = make([]Vertex,length)
-    w.SequenceB = make([]Vertex,length)
-    w.Mnspin    = 4
-    w.Cluster   = make([]int,w.Mnspin*length)
-    w.Weight    = make([]int,w.Mnspin*length)
-
-    w.Nvertices = 0
-    w.Flag  = true
-    w.State = make([]int,m.Nsite)
-    w.Last  = make([]int,m.Nsite)
-    w.First = make([]int,m.Nsite)
-    w.Nsite = m.Nsite
-    w.Beta = beta
+    w := update.NewWorldLine(4,m.Nsite,beta)
 
     for i:=0;i<w.Nsite;i++ {
         w.State[i] = 1
