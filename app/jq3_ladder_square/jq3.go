@@ -109,8 +109,8 @@ func measurement(w WorldLine, m Model, samples []Estimator) {
 }
 
 func main() {
-    lx   = 32
-    ly   = 32
+    lx   = 256
+    ly   = 256
     beta = 10.0
     q3   = 1.5
     seed := int64(84686)
@@ -141,36 +141,50 @@ func main() {
     }
 
     t0 := time.Now()
-    t1 := time.Now()
+    t8 := time.Now()
     d0 := time.Second*0
     d1 := time.Second*0
     d2 := time.Second*0
+    d3 := time.Second*0
+    d4 := time.Second*0
+    d5 := time.Second*0
     n := 0
     for {
         start := time.Now()
         w = update.Remove(w)
+        t1 := time.Now()
         w = update.Insert(w,m)
-        end_graph := time.Now()
+        t2 := time.Now()
         update.InnerLink(w,m)
+        t3 := time.Now()
         update.OuterLink(w,m)
+        t4 := time.Now()
         update.FlipCluster(w)
-        end_conf  := time.Now()
+        t5 := time.Now()
 
-        d0 += end_graph.Sub(start)
-        d1 += end_conf.Sub(end_graph)
+        d1 += t1.Sub(start)
+        d2 += t2.Sub(t1)
+        d3 += t3.Sub(t2)
+        d4 += t4.Sub(t3)
+        d5 += t5.Sub(t4)
 
         if n>2000 {
-            end_conf = time.Now()
+            t6 := time.Now()
             measurement(w,m,samples)
-            t2 := time.Now()
-            d2 += t2.Sub(end_conf)
+            t7 := time.Now()
+            d0 += t7.Sub(t6)
 
-            if t2.Sub(t1)>1*time.Minute {
-                t1 = time.Now()
+            if t7.Sub(t8)>1*time.Minute {
+                t8 = time.Now()
                 fmt.Printf("===========================================\n")
                 PrintMemUsage()
-                fmt.Printf("updating graphs : %v ,  updating configuration : %v ,  measurement : %v\n",d0,d1,d2)
-                fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t2.Sub(t0))
+                fmt.Printf("remove graphs : %v\n",d1)
+                fmt.Printf("insert graphs : %v\n",d2)
+                fmt.Printf("inner link    : %v\n",d3)
+                fmt.Printf("outer link    : %v\n",d4)
+                fmt.Printf("flip cluster  : %v\n",d5)
+                fmt.Printf("measurement   : %v\n",d0)
+                fmt.Printf("noo=%v nsweep=%v time=%v\n",w.Nvertices,n,t8.Sub(t0))
                 stats.PrintDetail(samples[1])
                 stats.PrintDetail(samples[3])
                 stats.PrintDetail(samples[4])
