@@ -10,7 +10,7 @@ model* malloc_model(int nsite, int nbond, int mhnspin) {
     m->bond2hNspin = (int*)malloc(sizeof(int)*nbond);
     m->bond2weight = (double*)malloc(sizeof(double)*nbond);
     m->bond2index  = (int*)malloc(sizeof(int)*nbond*mhnspin);
-    m->link        = (int*)malloc(sizeof(int)*nbond*mhnspin*3);
+    m->link        = (int*)malloc(sizeof(int)*mhnspin*4*20);
     m->insert      = (insert_rule*)malloc(sizeof(insert_rule)*20);
 
     m->nsite = nsite;
