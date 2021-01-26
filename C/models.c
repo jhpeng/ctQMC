@@ -1,4 +1,18 @@
+#include <stdlib.h>
+
 #include "dtype.h"
+
+static double* create_cmf(double* weight, int length) {
+    double* cmf = (double*)malloc(sizeof(double)*length);
+    int i=0;
+
+    cmf[0] = weight[i];
+    for(i=1;i<length;i++) {
+        cmf[i] = cmf[i-1]+weight[i];
+    }
+
+    return cmf;
+}
 
 int link_rule_singlet_proj_1[] = {0,0,2,2,2,1,2,1};
 
@@ -116,6 +130,7 @@ model* jq3_ladder_square(int lx, int ly, double q) {
     m->nsite = nsite;
     m->nbond = nbond;
     m->mhnspin = mhnspin;
+    m->cmf = create_cmf(m->bond2weight,nbond);
 
     return m;
 }

@@ -7,6 +7,7 @@ typedef struct model {
     int* bond2type;
     int* bond2hNspin;
     double* bond2weight;
+    double* cmf;
     int* bond2index;
     int* link;
     insert_rule* insert;
@@ -19,7 +20,7 @@ typedef struct model {
 typedef struct vertex {
     double tau;
     int bond;
-    int hnspin;
+    int hNspin;
     int state[20];
 } vertex;
 
@@ -32,7 +33,8 @@ typedef struct world_line {
     int* weight;
     int  mnspin;
     int  flag;
-    int* state;
+    int* istate;
+    int* pstate;
     int* last;
     int* first;
     int  nsite;

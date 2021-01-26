@@ -33,8 +33,8 @@ void free_model(model* m) {
 void copy_vertex(vertex* dist, vertex* src) {
     dist->tau = src->tau;
     dist->bond = src->bond;
-    dist->hnspin = src->hnspin;
-    for(int i=0;i<2*src->hnspin;i++) {
+    dist->hNspin = src->hNspin;
+    for(int i=0;i<2*src->hNspin;i++) {
         dist->state[i] = src->state[i];
     }
 }
@@ -46,7 +46,8 @@ world_line* malloc_world_line(int length, int mnspin, int nsite) {
     w->sequenceB = (vertex*)malloc(sizeof(vertex)*length);
     w->cluster  = (int*)malloc(sizeof(int)*length*mnspin);
     w->weight   = (int*)malloc(sizeof(int)*length*mnspin);
-    w->state    = (int*)malloc(sizeof(int)*nsite);
+    w->istate    = (int*)malloc(sizeof(int)*nsite);
+    w->pstate    = (int*)malloc(sizeof(int)*nsite);
     w->first    = (int*)malloc(sizeof(int)*nsite);
     w->last     = (int*)malloc(sizeof(int)*nsite);
 
@@ -64,7 +65,8 @@ void free_world_line(world_line* w) {
     free(w->sequenceB);
     free(w->cluster);
     free(w->weight);
-    free(w->state);
+    free(w->istate);
+    free(w->pstate);
     free(w->first);
     free(w->last);
 }
