@@ -129,5 +129,6 @@ void realloc_estimator(estimator* e, int length) {
 
         free(e->samples);
         e->samples = samples;
+        e->length = length;
     }
 }
