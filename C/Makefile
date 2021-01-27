@@ -5,7 +5,7 @@
 CC	= gcc
 
 # define any compile-time flags
-CFLAGS = -Wall -Werror -Wextra -g -O0 -std=c99
+CFLAGS = -Wall -g -fPIC -O3 -std=c99
 
 # define openmp flags
 OPENMP  = -fopenmp
@@ -15,26 +15,35 @@ CUOPENMP  = -Xcompiler -fopenmp
 INCLUDES= -I/usr/local/include -I./
 
 # define the library path
-LFLAGS	= -L/usr/local/lib 
+LFLAGS	= -L/usr/local/lib
 
 # define any libraries to link to executable
-LIBS	= -lm -lgsl -lgslcblas 
+LIBS	= -lm -lgsl -lgslcblas
+
+# define the C object files
+OBJS	= main.o update.o dtype.o union_find.o models.o stats.o
 
 
 #define the directory for object
-OBJS = dtype.o union_find.o models.o update.o stats.o
+OBJSDIR = object
 
 # define the executable file
-MAIN = lib/libctqmc.a
+MAIN	= exe
 
 all: $(MAIN)
 
 $(MAIN): $(OBJS)
-	ar -rcs $(MAIN) *.o 
-	cp *.h include/
+	$(CC) $(CFLAGS) -o $(MAIN) $(OBJS) $(LIBS) $(LFLAGS) $(INCLUDES) 
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $^
+
+lib: $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $^
+
+
 
 # clean the executable file and object files
 clean:
