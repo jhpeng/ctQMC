@@ -7,8 +7,8 @@
 #include "stats.h"
 
 int main() {
-    int x = 8;
-    int y = 8;
+    int x = 32;
+    int y = 32;
     double beta = 10;
     double q3 = 1.5;
     unsigned long int seed = 33474234;
@@ -42,4 +42,14 @@ int main() {
         clustering(w,m);
         flip_cluster(w,rng);
     }
+
+    free_model(m);
+    free_world_line(w);
+    free_estimator(samples[0]);
+    free_estimator(samples[1]);
+    free_estimator(samples[2]);
+    free_estimator(samples[3]);
+    free_estimator(samples[4]);
+    free_estimator(samples[5]);
+    gsl_rng_free(rng);
 }

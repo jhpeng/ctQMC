@@ -12,6 +12,7 @@ model* malloc_model(int nsite, int nbond, int mhnspin) {
     m->bond2index  = (int*)malloc(sizeof(int)*nbond*mhnspin);
     m->link        = (int*)malloc(sizeof(int)*mhnspin*4*20);
     m->insert      = (insert_rule*)malloc(sizeof(insert_rule)*20);
+    m->cmf         = (double*)malloc(sizeof(double)*nbond);
 
     m->nsite = nsite;
     m->nbond = nbond;
@@ -28,6 +29,8 @@ void free_model(model* m) {
     free(m->bond2index);
     free(m->link);
     free(m->insert);
+    free(m->cmf);
+    free(m);
 }
 
 void copy_vertex(vertex* dist, vertex* src) {
@@ -69,6 +72,7 @@ void free_world_line(world_line* w) {
     free(w->pstate);
     free(w->first);
     free(w->last);
+    free(w);
 }
 
 void realloc_world_line(world_line* w, int length) {
@@ -114,6 +118,7 @@ estimator* malloc_estimator(int length, char name[128]) {
 void free_estimator(estimator* e) {
     free(e->samples);
     free(e->blocks);
+    free(e);
 }
 
 void realloc_estimator(estimator* e, int length) {
