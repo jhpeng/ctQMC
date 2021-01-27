@@ -12,4 +12,6 @@ void clustering(world_line* w, model* m);
 
 void flip_cluster(world_line* w, gsl_rng* rng);
 
+int check_periodic(world_line* w, model* m);
+
 #endif

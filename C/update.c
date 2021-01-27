@@ -282,3 +282,35 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
     }
 }
 
+int check_periodic(world_line* w, model* m) {
+    vertex* sequence = w->sequenceB;
+    if(w->flag)
+        sequence = w->sequenceA;
+
+    for(int i=0;i<(w->nsite);i++)
+        w->pstate[i] = w->istate[i];
+
+    vertex* v;
+    for(int i=0;i<(w->nvertices);i++) {
+        v = &(sequence[i]);
+        int bond   = v->bond;
+        int hNspin = v->hNspin;
+
+        for(int j=0;j<hNspin;j++) {
+            int i_site = m->bond2index[bond*(m->mhnspin)+j];
+            if(w->pstate[i_site]!=(v->state[j])){
+                printf("something wrong!\n");
+            }
+            w->pstate[i_site] = v->state[j+hNspin];
+        }
+    }
+
+    int check=1;
+    for(int i=0;i<(w->nsite);i++){
+        if((w->pstate[i])!=(w->istate[i])) {
+            check=0;
+        }
+    }
+
+    return check;
+}
