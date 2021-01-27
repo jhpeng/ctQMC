@@ -1,6 +1,8 @@
 #ifndef update_h
 #define update_h
 
+#include "dtype.h"
+
 void remove_vertices(world_line* w);
 
 void insert_vertices(world_line* w, model* m, gsl_rng* rng);
