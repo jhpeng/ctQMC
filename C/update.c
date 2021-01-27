@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <math.h>
 #include <gsl/gsl_rng.h>
 
@@ -119,12 +120,17 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
     int mhnspin = m->mhnspin;
     int lstate[mhnspin];
 
+    k=0;
+    n=0;
+
+    tau1 = 0;
+    if(w->nvertices!=0) tau1 = (sequence1[0]).tau;
+
     for(i=0;i<insert_length;i++) {
-        v = &(sequence1[k]);
-        tau1 = v->tau;
         tau2 = insert_seq[i];
 
         while((tau1<tau2) && (k<(w->nvertices))) {
+            v = &(sequence1[k]);
             for(i_site=0;i_site<(v->hNspin);i_site++) {
                 index = m->bond2index[v->bond*mhnspin+i_site];
                 pstate[index] = v->state[v->hNspin+i_site];
@@ -133,19 +139,22 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
             copy_vertex(&(sequence2[n]),v);
             n++;
             k++;
-            v = &(sequence1[k]);
-            tau1 = v->tau;
+
+            if(k<(w->nvertices)){
+                tau1 = (sequence1[k]).tau;
+            }
         }
 
         if(tau1!=tau2) {
             int bond     = weighted_sampling(m->cmf,m->nbond,rng);
             int t        = m->bond2type[bond];
-            int* indices = &(m->bond2type[bond*mhnspin]);
             int hNspin   = m->bond2hNspin[bond];
             insert_rule rule = m->insert[t];
 
-            for(i_site=0;i_site<hNspin;i_site++) 
-                lstate[i_site] = pstate[indices[i_site]];
+            for(i_site=0;i_site<hNspin;i_site++) { 
+                index = m->bond2index[bond*mhnspin+i_site];
+                lstate[i_site] = pstate[index];
+            }
 
             if(rule(lstate)) {
                 (sequence2[n]).tau    = tau2;

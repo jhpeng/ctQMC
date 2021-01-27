@@ -1,5 +1,6 @@
 #ifndef update_h
 #define update_h
+#include <gsl/gsl_rng.h>
 
 #include "dtype.h"
 

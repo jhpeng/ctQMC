@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "dtype.h"
@@ -55,6 +56,10 @@ model* jq3_ladder_square(int lx, int ly, double q) {
             m->sweight += 0.5;
             m->bond2index[n*mhnspin+0] = i;
             m->bond2index[n*mhnspin+1] = j;
+            m->bond2index[n*mhnspin+2] = -1;
+            m->bond2index[n*mhnspin+3] = -1;
+            m->bond2index[n*mhnspin+4] = -1;
+            m->bond2index[n*mhnspin+5] = -1;
             n++;
         }
     }
@@ -69,6 +74,10 @@ model* jq3_ladder_square(int lx, int ly, double q) {
             m->sweight += 0.5;
             m->bond2index[n*mhnspin+0] = i;
             m->bond2index[n*mhnspin+1] = j;
+            m->bond2index[n*mhnspin+2] = -1;
+            m->bond2index[n*mhnspin+3] = -1;
+            m->bond2index[n*mhnspin+4] = -1;
+            m->bond2index[n*mhnspin+5] = -1;
             n++;
         }
     }
