@@ -43,10 +43,10 @@ typedef struct world_line {
 
 typedef struct estimator {
     char name[128];
-    double* sample;
+    double* samples;
     int length;
     int n;
-    double* block;
+    double* blocks;
     int bsize;
     int nblock;
 } estimator;
@@ -75,7 +75,7 @@ void realloc_world_line(
 
 estimator* malloc_estimator(
             int length, 
-            char* name);
+            char name[128]);
 
 void free_estimator(estimator* e);
 

@@ -97,11 +97,11 @@ void realloc_world_line(world_line* w, int length) {
     }
 }
 
-estimator* malloc_estimator(int length, char* name) {
+estimator* malloc_estimator(int length, char name[128]) {
     estimator* e = (estimator*)malloc(sizeof(estimator));
 
-    e->sample = (double*)malloc(sizeof(double)*length);
-    e->block  = (double*)malloc(sizeof(double)*1024);
+    e->samples = (double*)malloc(sizeof(double)*length);
+    e->blocks  = (double*)malloc(sizeof(double)*1024);
     strcpy(e->name,name);
     e->length = length;
     e->n = 0;
@@ -112,17 +112,17 @@ estimator* malloc_estimator(int length, char* name) {
 }
 
 void free_estimator(estimator* e) {
-    free(e->sample);
-    free(e->block);
+    free(e->samples);
+    free(e->blocks);
 }
 
 void realloc_estimator(estimator* e, int length) {
     if(length>(e->length)) {
-        double* sample = (double*)malloc(sizeof(double)*length);
+        double* samples = (double*)malloc(sizeof(double)*length);
         for(int i=0;i<(e->n);i++) 
-            sample[i] = e->sample[i];
+            samples[i] = e->samples[i];
 
-        free(e->sample);
-        e->sample = sample;
+        free(e->samples);
+        e->samples = samples;
     }
 }
