@@ -107,7 +107,7 @@ model* jq3_ladder_square(int lx, int ly, double q) {
             int i3 = (x+1)%lx+((y+0)%ly)*lx;
             int i4 = (x+1)%lx+((y+1)%ly)*lx;
             int i5 = (x+2)%lx+((y+0)%ly)*lx;
-            int i6 = (x+3)%lx+((y+1)%ly)*lx;
+            int i6 = (x+2)%lx+((y+1)%ly)*lx;
 
             m->bond2type[n]   = 1;
             m->bond2hNspin[n] = 6;
