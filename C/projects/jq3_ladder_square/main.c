@@ -86,14 +86,14 @@ void measurement(world_line* w, model* m, estimator** samples) {
 }
 
 int main() {
-    Lx = 32;
-    Ly = 32;
-    Beta = 10;
+    Lx = 256;
+    Ly = 256;
+    Beta = 20;
     Q3 = 1.5;
     Seed = 3347423;
 
-    int thermal = 100;
-    //int nsweep  = 1000000;
+    int thermal = 10000;
+    int nsweep  = 100000;
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
     gsl_rng_set(rng,Seed);
@@ -122,13 +122,16 @@ int main() {
         insert_vertices(w,m,rng);
         clustering(w,m);
         flip_cluster(w,rng);
+
+        printf("%d \n",w->nvertices);
         if(!check_periodic(w,m)){
+            printf("fail of check periodic!\n");
             exit(-1);
         }
     }
 
     int i=0;
-    for(;;) {
+    while(i<nsweep) {
         remove_vertices(w);
         insert_vertices(w,m,rng);
         clustering(w,m);
