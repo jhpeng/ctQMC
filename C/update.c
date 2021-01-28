@@ -5,6 +5,12 @@
 #include "dtype.h"
 #include "union_find.h"
 
+//#define check_weighted_sampling
+
+#ifdef check_weighted_sampling
+int* count = NULL;
+#endif
+
 static int weighted_sampling(double* cmf, int length, gsl_rng* rng) {
     double dis = gsl_rng_uniform_pos(rng)*cmf[length-1];
 
@@ -20,6 +26,14 @@ static int weighted_sampling(double* cmf, int length, gsl_rng* rng) {
         }
         d = j-i;
     }
+
+#ifdef check_weighted_sampling
+    if(count==NULL){
+        count =  (int*)malloc(sizeof(int)*length);
+        for(int k=0;k<length;k++) count[k]=0;
+    }
+    count[j]++;
+#endif
 
     return j;
 }
@@ -179,6 +193,20 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
 
     w->nvertices = n;
     w->flag = !(w->flag);
+
+#ifdef check_weighted_sampling
+    double tcount=0;
+    for(i=0;i<(m->nbond);i++)
+        tcount += count[i];
+
+    for(i=0;i<(m->nbond);i++){
+        double weight = count[i]/tcount*(m->sweight);
+        printf("%.4f ",weight);
+    }
+
+    printf("\n");
+#endif
+
 }
 
 void clustering(world_line* w, model* m) {
