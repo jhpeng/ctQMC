@@ -38,35 +38,69 @@ static int weighted_sampling(double* cmf, int length, gsl_rng* rng) {
     return j;
 }
 
-static int uniform_sequence_sampling(double** seq, int* size, double lam, double start, gsl_rng* rng) {
+double* insert_seq;
+int* insert_bond;
+int insert_len=0;
+int insert_cap=0;
+double d_ave=-1;
+double d_max=-1;
+static void uniform_sequence_sampling(model* m, double lam, double start, gsl_rng* rng) {
+    if(d_max<0){
+        d_max = 0;
+        d_ave = 0;
+        for(int i=0;i<(m->nbond);i++) {
+            d_ave += m->bond2weight[i];
+            if((m->bond2weight[i])>d_max)
+                d_max = m->bond2weight[i];
+        }
+        d_ave = d_ave/(m->nbond);
+    }
+
+    if(insert_cap==0) {
+        insert_cap = (int)(lam+sqrt(lam)*10+1024);
+        insert_seq  = (double*)malloc(sizeof(double)*insert_cap);
+        insert_bond = (int*)malloc(sizeof(int)*insert_cap);
+    }
+
+    lam = lam*d_max/d_ave;
+
     double k=0;
     int n=0;
+    int bond;
 
     double dis = gsl_rng_uniform_pos(rng);
     k -= log(dis)/lam;
-    while((k<1.0) && (n<(*size))) {
-        (*seq)[n] = k+start;
+    while((k<1.0) && (n<insert_cap)) {
+        bond = gsl_rng_uniform_pos(rng)*(m->nbond);
+        if(gsl_rng_uniform_pos(rng)*d_max<(m->bond2weight[bond])){
+            insert_seq[n]  = k+start;
+            insert_bond[n] = bond;
+            n++;
+        }
+
         dis = gsl_rng_uniform_pos(rng);
         k -= log(dis)/lam;
-        n++;
     }
     while(k<1.0) {
         dis = gsl_rng_uniform_pos(rng);
         k -= log(dis)/lam;
         n++;
     }
-    if(n>(*size)) {
-        int ng = *size;
-        double* temp = (double*)malloc(sizeof(double)*n*2);
-        for(int i=0;i<(*size);i++) temp[i] = (*seq)[i];
-        free(*seq);
-        *seq = temp;
-        *size = n*2;
-
-        return ng;
+    if(n>insert_cap) {
+        double* seq = (double*)malloc(sizeof(double)*n*2);
+        int* bond   = (int*)malloc(sizeof(int)*n*2);
+        for(int i=0;i<insert_cap;i++){
+            seq[i]  = insert_seq[i];
+            bond[i] = insert_bond[i];
+        }
+        free(insert_seq);
+        insert_seq  = seq;
+        insert_bond = bond;
+        insert_len = insert_cap;
+        insert_cap = n*2;
     }
 
-    return n;
+    insert_len = n;
 }
 
 void remove_vertices(world_line* w) {
@@ -100,19 +134,12 @@ void remove_vertices(world_line* w) {
     w->flag = !(w->flag);
 }
 
-double* insert_seq;
-int insert_length=0;
-int insert_size=0;
 void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
     double lam = (m->sweight)*(w->beta);
 
-    if(insert_size==0) {
-        insert_size = (int)(lam+sqrt(lam)*10+1024);
-        insert_seq = (double*)malloc(sizeof(double)*insert_size);
-    }
+    uniform_sequence_sampling(m,lam,0,rng);
 
-    insert_length = uniform_sequence_sampling(&insert_seq,&insert_size,lam,0,rng);
-    int length = insert_length+w->nvertices+1024;
+    int length = insert_cap+w->nvertices;
     realloc_world_line(w,length);
 
     vertex* sequence1 = w->sequenceB;
@@ -140,7 +167,7 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
     tau1 = 0;
     if(w->nvertices!=0) tau1 = (sequence1[0]).tau;
 
-    for(i=0;i<insert_length;i++) {
+    for(i=0;i<insert_len;i++) {
         tau2 = insert_seq[i];
 
         while((tau1<tau2) && (k<(w->nvertices))) {
@@ -160,7 +187,7 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
         }
 
         if(tau1!=tau2) {
-            int bond     = weighted_sampling(m->cmf,m->nbond,rng);
+            int bond     = insert_bond[i];
             int t        = m->bond2type[bond];
             int hNspin   = m->bond2hNspin[bond];
             insert_rule rule = m->insert[t];
