@@ -28,15 +28,17 @@ OBJS	=  update.o dtype.o union_find.o models.o stats.o
 OBJSDIR = object
 
 # define the executable file
-MAINSRC = projects/jq3_ladder_square/main.c
 MAIN	= exe
+
+# define the main srouce file
+MAINSRC = projects/jq3_ladder_square/main.c
 
 all: $(MAIN)
 
 $(MAIN): $(OBJS) main.o
 	$(CC) $(CFLAGS) -o $(MAIN) main.o $(OBJS) $(LIBS) $(LFLAGS) $(INCLUDES) 
 
-main.o :
+main.o : $(MAINSRC)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $(MAINSRC)
 
 %.o: %.c
