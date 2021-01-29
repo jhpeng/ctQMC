@@ -38,15 +38,25 @@ void measurement(world_line* w, model* m, estimator** samples) {
     for(int i=0;i<nsite;i++) {
         mz += w->istate[i];
         ms += (w->istate[i])*staggered_structure[i];
+        w->pstate[i] = w->istate[i];
     }
 
     vertex* sequence = w->sequenceB;
     if(w->flag)
         sequence = w->sequenceA;
 
+    double mz_t=0;
+    int measure_correlator=1;
+
     for(int i=0;i<(w->nvertices);i++) {
+        double tau = (sequence[i]).tau;
         int bond   = (sequence[i]).bond;
         int hNspin = (sequence[i]).hNspin;
+        
+        if(tau*Beta>0.17 && measure_correlator) {
+            mz_t = w->pstate[0];
+            measure_correlator=0;
+        }
 
         for(int j=0;j<hNspin;j++) {
             int i_site = m->bond2index[bond*mhnspin+j];
@@ -54,6 +64,7 @@ void measurement(world_line* w, model* m, estimator** samples) {
             int staten = (sequence[i]).state[j+hNspin];
             int dif    = (statep*staten-1)*statep;
             ms += staggered_structure[i_site]*dif;
+            w->pstate[i_site] = staten;
         }
 
         msx += ms;
@@ -83,17 +94,18 @@ void measurement(world_line* w, model* m, estimator** samples) {
     append_estimator(samples[3],msx);
     append_estimator(samples[4],chiu);
     append_estimator(samples[5],l);
+    append_estimator(samples[6],w->istate[0]*mz_t);
 }
 
 int main() {
-    Lx = 32;
-    Ly = 32;
-    Beta = 10;
+    Lx = 24;
+    Ly = 24;
+    Beta = 16;
     Q3 = 1.5;
     Seed = 3347423;
 
     int thermal = 10000;
-    int nsweep  = 100000;
+    int nsweep  = 1000000;
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
     gsl_rng_set(rng,Seed);
@@ -101,13 +113,14 @@ int main() {
     model* m = jq3_ladder_square(Lx,Ly,Q3);
     world_line* w = malloc_world_line(1024,2*(m->mhnspin),m->nsite);
 
-    estimator* samples[6];
-    samples[0] = malloc_estimator(100000,"ms1");
-    samples[1] = malloc_estimator(100000,"ms2");
-    samples[2] = malloc_estimator(100000,"ms4");
-    samples[3] = malloc_estimator(100000,"Xs");
-    samples[4] = malloc_estimator(100000,"Xu");
-    samples[5] = malloc_estimator(100000,"Noo");
+    estimator* samples[7];
+    samples[0] = malloc_estimator(nsweep,"ms1");
+    samples[1] = malloc_estimator(nsweep,"ms2");
+    samples[2] = malloc_estimator(nsweep,"ms4");
+    samples[3] = malloc_estimator(nsweep,"Xs");
+    samples[4] = malloc_estimator(nsweep,"Xu");
+    samples[5] = malloc_estimator(nsweep,"Noo");
+    samples[6] = malloc_estimator(nsweep,"<mm(t)>");
 
     w->beta = Beta;
     for(int i=0;i<(w->nsite);i++) {
@@ -123,15 +136,16 @@ int main() {
         clustering(w,m);
         flip_cluster(w,rng);
 
-        printf("%d \n",w->nvertices);
-        if(!check_periodic(w,m)){
-            printf("fail of check periodic!\n");
-            exit(-1);
-        }
+        //printf("%d \n",w->nvertices);
+        //if(!check_periodic(w,m)){
+        //    printf("fail of check periodic!\n");
+        //    exit(-1);
+        //}
     }
 
     int i=0;
-    while(i<nsweep) {
+    int nblock=0;
+    while(1) {
         remove_vertices(w);
         insert_vertices(w,m,rng);
         clustering(w,m);
@@ -139,12 +153,15 @@ int main() {
         measurement(w,m,samples);
         i++;
 
-        if(i%1000==0){
+        if(i>1024 && nblock!=(samples[0])->nblock){
+            nblock = (samples[0])->nblock;
             printf("=========================================\n");
+            printf("L=%d q=%.4f beta=%.1f\n",Lx,Q3,Beta);
             print_detail(samples[1]);
             print_detail(samples[3]);
             print_detail(samples[4]);
             print_detail(samples[5]);
+            print_detail(samples[6]);
         }
     }
 
@@ -156,5 +173,6 @@ int main() {
     free_estimator(samples[3]);
     free_estimator(samples[4]);
     free_estimator(samples[5]);
+    free_estimator(samples[6]);
     gsl_rng_free(rng);
 }
