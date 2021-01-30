@@ -33,7 +33,7 @@ int main() {
     }
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t2);
 
-    //parallelized
+    //parallel
     omp_set_num_threads(nt);
     #pragma omp parallel
     {
@@ -60,5 +60,5 @@ int main() {
 
     printf("sequencial for loop:\t %f seconds\n", d_t(t1,t2));
     printf("paralel    for loop:\t %f seconds\n", d_t(t2,t3));
-    printf("effection          :\t %f \n",(double)d_t(t1,t2)/(double)d_t(t2,t3));
+    printf("efficiency         :\t %f \n",(double)d_t(t1,t2)/(double)d_t(t2,t3));
 }
