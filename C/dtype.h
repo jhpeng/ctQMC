@@ -41,6 +41,30 @@ typedef struct world_line {
     double beta;
 } world_line;
 
+typedef struct world_line_omp {
+    int nthread;
+    vertex** sequenceA;
+    vertex** sequenceB;
+    int* flag;
+    int* cap;
+    int* len;
+    int mcap;
+    int* cluster;
+    int* weight;
+    int csize;
+    int mnspin;
+    int nsite;
+    int* istate;
+    int* pstate;
+    int* first;
+    int* last;
+    double** insert_seq;
+    int** insert_bond;
+    int* insert_cap;
+    int* insert_len;
+    double beta;
+} world_line_omp;
+
 typedef struct estimator {
     char name[128];
     double* samples;
