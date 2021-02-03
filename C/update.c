@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <gsl/gsl_rng.h>
 
@@ -28,12 +29,12 @@ static int weighted_sampling(double* cmf, int length, gsl_rng* rng) {
 }
 #endif
 
-double* insert_seq;
-int* insert_bond;
-int insert_len=0;
-int insert_cap=0;
-double d_ave=-1;
-double d_max=-1;
+static double* insert_seq;
+static int* insert_bond;
+static int insert_len=0;
+static int insert_cap=0;
+static double d_ave=-1;
+static double d_max=-1;
 static void uniform_sequence_sampling(model* m, double lam, double start, gsl_rng* rng) {
     if(d_max<0){
         d_max = 0;
@@ -76,6 +77,7 @@ static void uniform_sequence_sampling(model* m, double lam, double start, gsl_rn
         k -= log(dis)/lam;
         n++;
     }
+    insert_len = n;
     if(n>insert_cap) {
         double* seq = (double*)malloc(sizeof(double)*n*2);
         int* bond   = (int*)malloc(sizeof(int)*n*2);
@@ -89,8 +91,6 @@ static void uniform_sequence_sampling(model* m, double lam, double start, gsl_rn
         insert_len = insert_cap;
         insert_cap = n*2;
     }
-
-    insert_len = n;
 }
 
 void remove_vertices(world_line* w) {
