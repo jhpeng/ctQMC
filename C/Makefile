@@ -21,7 +21,7 @@ LFLAGS	= -L/usr/local/lib
 LIBS	= -lm -lgsl -lgslcblas
 
 # define the C object files
-OBJS	=  update.o dtype.o union_find.o models.o stats.o
+OBJS	=  update.o update_omp.o dtype.o union_find.o models.o stats.o
 
 
 #define the directory for object
@@ -36,18 +36,18 @@ MAINSRC = projects/jq3_ladder_square/main.c
 all: $(MAIN)
 
 $(MAIN): $(OBJS) main.o
-	$(CC) $(CFLAGS) -o $(MAIN) main.o $(OBJS) $(LIBS) $(LFLAGS) $(INCLUDES) 
+	$(CC) $(CFLAGS) $(OPENMP) -o $(MAIN) main.o $(OBJS) $(LIBS) $(LFLAGS) $(INCLUDES) 
 
 main.o : $(MAINSRC)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $(MAINSRC)
+	$(CC) $(CFLAGS) $(OPENMP) $(INCLUDES) -c $(MAINSRC)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $^
+	$(CC) $(CFLAGS) $(OPENMP) $(INCLUDES) -c $^
 
 lib: $(OBJS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $^
+	$(CC) $(CFLAGS) $(OPENMP) $(INCLUDES) -c $^
 
 
 
