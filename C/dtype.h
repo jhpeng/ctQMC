@@ -97,6 +97,26 @@ void realloc_world_line(
             world_line* w, 
             int length);
 
+world_line_omp* malloc_world_line_omp(
+            int cap, 
+            int mnspin, 
+            int nsite, 
+            int nthread);
+
+void free_world_line_omp(world_line_omp* w);
+
+void realloc_world_line_omp_vertex(
+            world_line_omp* w, 
+            int cap, 
+            int i_thread);
+
+void realloc_world_line_omp_cluster(world_line_omp* w);
+
+void realloc_world_line_omp_insert(
+            world_line_omp* w, 
+            int cap, 
+            int i_thread);
+
 estimator* malloc_estimator(
             int length, 
             char name[128]);
