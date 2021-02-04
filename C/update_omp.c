@@ -7,7 +7,7 @@
 #include "dtype.h"
 #include "union_find.h"
 
-#define using_omp
+//#define using_omp
 
 static double d_ave=-1;
 static double d_max=-1;
@@ -266,6 +266,122 @@ void clustering_inner_omp(world_line_omp* w, model* m) {
                     merge(w->cluster,w->weight,last[index],idp);
                     last[index] = idn;
                 }
+            }
+        }
+    }
+}
+
+//without parallelization
+void clustering_crossing(world_line_omp* w) {
+    int nsite = w->nsite;
+    int* first_all = w->first;
+    int* last_all = w->last;
+
+    for(int i_thread=1;i_thread<(w->nthread);i_thread++) {
+        int* first = &(w->first[nsite*i_thread]);
+        int* last  = &(w->last[nsite*i_thread]);
+
+        for(int i=0;i<nsite;i++) {
+            if(first_all[i]==-1){
+                first_all[i] = first[i];
+                last_all[i] = last[i];
+            } else if(first[i]==-1) {
+                first[i] = last_all[i];
+                last[i] = last_all[i];
+            } else {
+                merge(w->cluster,w->weight,last_all[i],first[i]);
+                last_all[i] = last[i];
+            }
+        }
+    }
+
+    for(int i=0;i<nsite;i++) {
+        if(first_all[i]!=-1) {
+            merge(w->cluster,w->weight,first_all[i],last_all[i]);
+        }
+    }
+}
+
+void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
+    
+#ifdef using_omp
+    omp_set_num_threads(w->nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+#else
+    for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
+#endif
+        
+        int start = i_thread*(w->mcap)*(w->mnspin);
+        int end = start+(w->len[i_thread])*(w->mnspin);
+        double dis;
+
+        for(int i=start;i<end;i++) {
+            if((w->cluster[i])==i) {
+                dis = gsl_rng_uniform_pos(rng[i_thread]);
+                if(dis<0.5) {
+                    w->weight[i] = 1;
+                } else {
+                    w->weight[i] = -1;
+                }
+            }
+        }
+#ifdef using_omp
+        #pragma omp barrier
+#endif
+
+        int* state;
+        int hNspin,idv,idr,i,j;
+
+        int mnspin = w->mnspin;
+
+        vertex* sequence = w->sequenceB[i_thread];
+        if(w->flag[i_thread])
+            sequence = w->sequenceA[i_thread];
+
+        for(i=0;i<(w->len[i_thread]);i++) {
+            hNspin = (sequence[i]).hNspin;
+            state  = (sequence[i]).state;
+
+            for(j=0;j<2*hNspin;j++) {
+                idv = start+i*mnspin+j;
+                idr = root(w->cluster,idv);
+                
+                state[j] = state[j]*(w->weight[idr]);
+            }
+        }
+    }
+
+    for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
+        int id,i,j,t,p;
+        int mnspin = w->mnspin;
+        int mcap = w->mcap;
+        int nsite = w->nsite;
+
+        vertex* sequence;
+
+        for(i=0;i<nsite;i++) {
+            id = w->first[i+i_thread*nsite];
+            if(id!=-1) {
+                t  = id/(mnspin*mcap);
+                id = id%(mnspin*mcap);
+                p  = id/mnspin;
+                j  = id%mnspin;
+
+                sequence = w->sequenceB[t];
+                if(w->flag[i_thread])
+                    sequence = w->sequenceA[t];
+
+                w->istate[i+nsite*i_thread] = (sequence[p]).state[j];
+            } else if(i_thread==0) {
+                if(gsl_rng_uniform_pos(rng[0])<0.5) {
+                    w->istate[i] =  1;
+                } else {
+                    w->istate[i] = -1;
+                }
+            } else {
+                w->istate[i+nsite*i_thread] = w->istate[i];
             }
         }
     }
