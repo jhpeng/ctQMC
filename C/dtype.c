@@ -123,6 +123,11 @@ world_line_omp* malloc_world_line_omp(int cap, int mnspin, int nsite, int nthrea
     w->cluster = (int*)malloc(sizeof(int)*cap*mnspin*nthread);
     w->weight  = (int*)malloc(sizeof(int)*cap*mnspin*nthread);
 
+    for(int i=0;i<cap*mnspin*nthread;i++) {
+        w->cluster[i] = -1;
+        w->weight[i]  = -1;
+    }
+
     w->istate = (int*)malloc(sizeof(int)*nsite*nthread);
     w->pstate = (int*)malloc(sizeof(int)*nsite*nthread);
     w->first  = (int*)malloc(sizeof(int)*nsite*nthread);
@@ -209,6 +214,11 @@ void realloc_world_line_omp_cluster(world_line_omp* w) {
         w->weight  = (int*)malloc(sizeof(int)*(w->mcap)*(w->mnspin)*(w->nthread));
 
         w->csize = (w->mcap)*(w->mnspin)*(w->nthread);
+
+        for(int i=0;i<(w->csize);i++) {
+            w->cluster[i] = -1;
+            w->weight[i]  = -1;
+        }
     }
 }
 
