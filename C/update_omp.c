@@ -7,7 +7,7 @@
 #include "dtype.h"
 #include "union_find.h"
 
-//#define using_omp
+#define using_omp
 
 static double d_ave=-1;
 static double d_max=-1;
@@ -111,7 +111,7 @@ void insert_vertices_omp(world_line_omp* w, model* m, gsl_rng** rng) {
 
     for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
         int len = (w->len[i_thread]) + (w->insert_len[i_thread]);
-        realloc_world_line_omp_vertex(w,len,i_thread);        
+        realloc_world_line_omp_vertex(w,len,i_thread);
     }
 
 #ifdef using_omp
@@ -327,10 +327,18 @@ void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
                 }
             }
         }
-#ifdef using_omp
-        #pragma omp barrier
-#endif
+    }
 
+#ifdef using_omp
+    omp_set_num_threads(w->nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+#else
+    for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
+#endif
+        
+        int start = i_thread*(w->mcap)*(w->mnspin);
         int* state;
         int hNspin,idv,idr,i,j;
 
