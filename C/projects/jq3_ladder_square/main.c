@@ -98,9 +98,9 @@ void measurement(world_line* w, model* m, estimator** samples) {
 }
 
 int main() {
-    Lx = 24;
-    Ly = 24;
-    Beta = 16;
+    Lx = 128;
+    Ly = 128;
+    Beta = 128;
     Q3 = 1.5;
     Seed = 3347423;
 

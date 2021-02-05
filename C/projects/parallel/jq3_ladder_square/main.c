@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <gsl/gsl_rng.h>
+#include <omp.h>
 
 #include "dtype.h"
 #include "models.h"
@@ -93,15 +94,15 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
 }
 
 int main() {
-    Lx = 32;
-    Ly = 32;
-    Beta = 10;
+    Lx = 128;
+    Ly = 128;
+    Beta = 800;
     Q3 = 1.5;
-    Seed = 84273003;
+    Seed = 43003;
 
     int thermal = 100000;
     int nsweep  = 1000000;
-    int nthread = 4;
+    int nthread = 6;
 
     gsl_rng* rng[nthread];
     for(int i=0;i<nthread;i++) {
@@ -110,15 +111,20 @@ int main() {
     }
 
     model* m = jq3_ladder_square(Lx,Ly,Q3);
-    world_line_omp* w = malloc_world_line_omp(1024,2*(m->mhnspin),(m->nsite),nthread);
 
-    estimator* samples[6];
+    int mcap = 1.5*(m->sweight)*Beta/nthread;
+    if(mcap<1024) mcap=1024;
+
+    world_line_omp* w = malloc_world_line_omp(mcap,2*(m->mhnspin),(m->nsite),nthread);
+
+    estimator* samples[7];
     samples[0] = malloc_estimator(nsweep,"ms1");
     samples[1] = malloc_estimator(nsweep,"ms2");
     samples[2] = malloc_estimator(nsweep,"ms4");
     samples[3] = malloc_estimator(nsweep,"Xs");
     samples[4] = malloc_estimator(nsweep,"Xu");
     samples[5] = malloc_estimator(nsweep,"Noo");
+    samples[6] = malloc_estimator(nsweep,"time");
 
     w->beta = Beta;
     for(int i=0;i<(w->nsite);i++) {
@@ -131,23 +137,55 @@ int main() {
             w->istate[i+(w->nsite)*j] = w->istate[i];
     }
 
+    double times[10];
     for(int i=0;i<thermal;i++) {
+        double start = omp_get_wtime();
         remove_vertices_omp(w);
+        double t1 = omp_get_wtime();
         insert_vertices_omp(w,m,rng);
+        double t2 = omp_get_wtime();
         clustering_inner_omp(w,m);
+        double t3 = omp_get_wtime();
         clustering_crossing(w);
+        double t4 = omp_get_wtime();
         flip_cluster_omp(w,rng);
+        double end = omp_get_wtime();
+
+        int noo=0;
+        for(int j=0;j<nthread;j++)
+            noo+=w->len[j];
+
+        times[i%10] = end-start;
+
+        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo,nthread);
+        if(i>10) {
+            double mtime=0;
+            for(int j=0;j<10;j++) mtime+=times[j];
+            mtime = mtime/10;
+            printf("| time:%f \n",mtime);
+        } else {
+            printf("\n");
+        }
+        printf("remove_vertices_omp  : %f  \n",(t1-start)/(end-start));
+        printf("insert_vertices_omp  : %f  \n",(t2-t1)/(end-start));
+        printf("clusterinf_inner_omp : %f  \n",(t3-t2)/(end-start));
+        printf("clusterinf_crossing  : %f  \n",(t4-t3)/(end-start));
+        printf("flip_cluster_omp     : %f  \n",(end-t4)/(end-start));
     }
 
     int i=0;
     int nblock=0;
-    while(1) {
+    for(;;) {
+        double start = omp_get_wtime();
         remove_vertices_omp(w);
         insert_vertices_omp(w,m,rng);
         clustering_inner_omp(w,m);
         clustering_crossing(w);
         flip_cluster_omp(w,rng);
         measurement(w,m,samples);
+        double end = omp_get_wtime();
+        append_estimator(samples[6],end-start);
+
         i++;
         
         if(i>1024 && nblock!=(samples[0])->nblock){
@@ -158,6 +196,7 @@ int main() {
             print_detail(samples[3]);
             print_detail(samples[4]);
             print_detail(samples[5]);
+            print_detail(samples[6]);
         }
     }
 
@@ -169,6 +208,7 @@ int main() {
     free_estimator(samples[3]);
     free_estimator(samples[4]);
     free_estimator(samples[5]);
+    free_estimator(samples[6]);
 
     for(int i=0;i<nthread;i++)
         gsl_rng_free(rng[i]);
