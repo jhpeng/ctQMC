@@ -93,16 +93,16 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
     append_estimator(samples[5],l);
 }
 
-int main() {
-    Lx = 128;
-    Ly = 128;
-    Beta = 800;
-    Q3 = 1.5;
-    Seed = 43003;
+int main(int argc, char** argv) {
+    Lx = atoi(argv[1]);
+    Ly = atoi(argv[2]);
+    Q3 = atof(argv[3]);
+    Beta = atof(argv[4]);
+    Seed = atoi(argv[5]);
 
-    int thermal = 100000;
-    int nsweep  = 1000000;
-    int nthread = 6;
+    int thermal = atoi(argv[6]);
+    int nsweep  = atoi(argv[7]);
+    int nthread = atoi(argv[8]);
 
     gsl_rng* rng[nthread];
     for(int i=0;i<nthread;i++) {
@@ -112,7 +112,7 @@ int main() {
 
     model* m = jq3_ladder_square(Lx,Ly,Q3);
 
-    int mcap = 1.5*(m->sweight)*Beta/nthread;
+    int mcap = 2.0*(m->sweight)*Beta/nthread;
     if(mcap<1024) mcap=1024;
 
     world_line_omp* w = malloc_world_line_omp(mcap,2*(m->mhnspin),(m->nsite),nthread);
@@ -137,7 +137,7 @@ int main() {
             w->istate[i+(w->nsite)*j] = w->istate[i];
     }
 
-    double times[10];
+    double times[50];
     for(int i=0;i<thermal;i++) {
         double start = omp_get_wtime();
         remove_vertices_omp(w);
@@ -155,13 +155,14 @@ int main() {
         for(int j=0;j<nthread;j++)
             noo+=w->len[j];
 
-        times[i%10] = end-start;
+        times[i%50] = end-start;
 
+        printf("-----------------------------------------\n");
         printf("thremal:%d | Noo:%d | nthread=%d ",i,noo,nthread);
-        if(i>10) {
+        if(i>50) {
             double mtime=0;
-            for(int j=0;j<10;j++) mtime+=times[j];
-            mtime = mtime/10;
+            for(int j=0;j<50;j++) mtime+=times[j];
+            mtime = mtime/50;
             printf("| time:%f \n",mtime);
         } else {
             printf("\n");
