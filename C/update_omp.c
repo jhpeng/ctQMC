@@ -361,7 +361,15 @@ void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
         }
     }
 
+#ifdef using_omp
+    omp_set_num_threads(w->nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+#else
     for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
+#endif
+        
         int id,i,j,t,p;
         int mnspin = w->mnspin;
         int mcap = w->mcap;
@@ -369,27 +377,32 @@ void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
 
         vertex* sequence;
 
-        for(i=0;i<nsite;i++) {
-            id = w->first[i+i_thread*nsite];
-            if(id!=-1) {
-                t  = id/(mnspin*mcap);
-                id = id%(mnspin*mcap);
-                p  = id/mnspin;
-                j  = id%mnspin;
+        int start_site = i_thread*nsite/(w->nthread);
+        int end_site = (i_thread+1)*nsite/(w->nthread);
 
-                sequence = w->sequenceB[t];
-                if(w->flag[i_thread])
-                    sequence = w->sequenceA[t];
+        for(int i_block=0;i_block<(w->nthread);i_block++) {
+            for(i=start_site;i<end_site;i++) {
+                id = w->first[i+i_block*nsite];
+                if(id!=-1) {
+                    t  = id/(mnspin*mcap);
+                    id = id%(mnspin*mcap);
+                    p  = id/mnspin;
+                    j  = id%mnspin;
 
-                w->istate[i+nsite*i_thread] = (sequence[p]).state[j];
-            } else if(i_thread==0) {
-                if(gsl_rng_uniform_pos(rng[0])<0.5) {
-                    w->istate[i] =  1;
+                    sequence = w->sequenceB[t];
+                    if(w->flag[i_block])
+                        sequence = w->sequenceA[t];
+
+                    w->istate[i+nsite*i_block] = (sequence[p]).state[j];
+                } else if(i_block==0) {
+                    if(gsl_rng_uniform_pos(rng[i_thread])<0.5) {
+                        w->istate[i] =  1;
+                    } else {
+                        w->istate[i] = -1;
+                    }
                 } else {
-                    w->istate[i] = -1;
+                    w->istate[i+nsite*i_block] = w->istate[i];
                 }
-            } else {
-                w->istate[i+nsite*i_thread] = w->istate[i];
             }
         }
     }
