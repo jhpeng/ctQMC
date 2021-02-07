@@ -137,7 +137,7 @@ void insert_vertices_omp(world_line_omp* w, model* m, gsl_rng** rng) {
             pstate[i] = w->istate[i_thread*nsite+i];
 
         vertex* v;
-        int n,i,k,i_site,index;
+        int n,i,k,i_site,index,bond,t,hNspin;
         double tau1,tau2;
 
         int mhnspin = m->mhnspin;
@@ -171,9 +171,9 @@ void insert_vertices_omp(world_line_omp* w, model* m, gsl_rng** rng) {
             }
 
             if(tau1!=tau2) {
-                int bond     = insert_bond[i];
-                int t        = m->bond2type[bond];
-                int hNspin   = m->bond2hNspin[bond];
+                bond     = insert_bond[i];
+                t        = m->bond2type[bond];
+                hNspin   = m->bond2hNspin[bond];
                 insert_rule rule = m->insert[t];
                 
                 for(i_site=0;i_site<hNspin;i_site++) { 

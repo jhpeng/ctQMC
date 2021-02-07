@@ -169,8 +169,8 @@ int main(int argc, char** argv) {
         }
         printf("remove_vertices_omp  : %f  \n",(t1-start)/(end-start));
         printf("insert_vertices_omp  : %f  \n",(t2-t1)/(end-start));
-        printf("clusterinf_inner_omp : %f  \n",(t3-t2)/(end-start));
-        printf("clusterinf_crossing  : %f  \n",(t4-t3)/(end-start));
+        printf("clustering_inner_omp : %f  \n",(t3-t2)/(end-start));
+        printf("clustering_crossing  : %f  \n",(t4-t3)/(end-start));
         printf("flip_cluster_omp     : %f  \n",(end-t4)/(end-start));
     }
 
