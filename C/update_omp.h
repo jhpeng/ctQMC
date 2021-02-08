@@ -13,6 +13,8 @@ void clustering_inner_omp(world_line_omp* w, model* m);
 
 void clustering_crossing(world_line_omp* w);
 
+void clustering_crossing_omp(world_line_omp* w);
+
 void flip_cluster_omp(world_line_omp* w, gsl_rng** rng);
 
 #endif

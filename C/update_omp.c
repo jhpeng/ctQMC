@@ -302,6 +302,66 @@ void clustering_crossing(world_line_omp* w) {
     }
 }
 
+
+void clustering_crossing_omp(world_line_omp* w) {
+    int nsite  = w->nsite;
+    int nthread = w->nthread;
+    int niter  = 0;
+    int nblock = 1;
+
+    while(nblock<nthread) {
+        niter++;
+        nblock = nblock*2;
+    }
+
+    int k=2;
+    for(int i_iter=0;i_iter<niter;i_iter++) {
+#ifdef using_omp
+        omp_set_num_threads(w->nthread);
+        #pragma omp parallel
+        {
+            int i_thread = omp_get_thread_num();
+#else
+        for(int i_thread=0;i_thread<nthread;i_thread++) {
+#endif
+
+            int st = i_thread*k;
+            int ed = (i_thread+1)*k;
+            int p_block = (k/2)+i_thread*k-1;
+            int n_block = (k/2)+i_thread*k;
+
+            if(ed>nthread){
+                ed = w->nthread;
+            }
+
+            if(n_block<nthread){
+                for(int i=0;i<nsite;i++) {
+                    if(w->last[p_block*nsite+i]==-1) {
+                        for(int j=st;j<n_block;j++) {
+                            w->first[j*nsite+i] = w->first[n_block*nsite+i];
+                            w->last[j*nsite+i] = w->first[n_block*nsite+i];
+                        }
+                    } else if(w->first[n_block*nsite+i]==-1) {
+                        for(int j=n_block;j<ed;j++) {
+                            w->first[j*nsite+i] = w->last[p_block*nsite+i];
+                            w->last[j*nsite+i] = w->last[p_block*nsite+i];
+                        }
+                    } else {
+                        merge(w->cluster,w->weight,w->last[p_block*nsite+i],w->first[n_block*nsite+i]);
+                    }
+                }
+            }
+        }
+        k=k*2;
+    }
+
+    for(int i=0;i<nsite;i++) {
+        if(w->first[i]!=-1) {
+            merge(w->cluster,w->weight,w->first[i],w->last[nthread*nsite+i]);
+        }
+    }
+}
+
 void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
     
 #ifdef using_omp

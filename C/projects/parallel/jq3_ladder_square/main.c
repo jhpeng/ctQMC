@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
         double t2 = omp_get_wtime();
         clustering_inner_omp(w,m);
         double t3 = omp_get_wtime();
-        clustering_crossing(w);
+        clustering_crossing_omp(w);
         double t4 = omp_get_wtime();
         flip_cluster_omp(w,rng);
         double end = omp_get_wtime();
@@ -167,21 +167,21 @@ int main(int argc, char** argv) {
         } else {
             printf("\n");
         }
-        printf("remove_vertices_omp  : %f  \n",(t1-start)/(end-start));
-        printf("insert_vertices_omp  : %f  \n",(t2-t1)/(end-start));
-        printf("clustering_inner_omp : %f  \n",(t3-t2)/(end-start));
-        printf("clustering_crossing  : %f  \n",(t4-t3)/(end-start));
-        printf("flip_cluster_omp     : %f  \n",(end-t4)/(end-start));
+        printf("remove_vertices_omp     : %f  \n",(t1-start)/(end-start));
+        printf("insert_vertices_omp     : %f  \n",(t2-t1)/(end-start));
+        printf("clustering_inner_omp    : %f  \n",(t3-t2)/(end-start));
+        printf("clustering_crossing_omp : %f  \n",(t4-t3)/(end-start));
+        printf("flip_cluster_omp        : %f  \n",(end-t4)/(end-start));
     }
 
     int i=0;
     int nblock=0;
-    for(;;) {
+    while(i<nsweep) {
         double start = omp_get_wtime();
         remove_vertices_omp(w);
         insert_vertices_omp(w,m,rng);
         clustering_inner_omp(w,m);
-        clustering_crossing(w);
+        clustering_crossing_omp(w);
         flip_cluster_omp(w,rng);
         measurement(w,m,samples);
         double end = omp_get_wtime();
