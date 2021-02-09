@@ -7,6 +7,7 @@
 #include "update_omp.h"
 #include "stats.h"
 
+int Mode;
 int Lx;
 int Ly;
 double Q3;
@@ -16,7 +17,7 @@ unsigned long int Seed;
 double* staggered_structure=NULL;
 void measurement(world_line_omp* w, model* m, estimator** samples) {
     if(staggered_structure==NULL) {
-        staggered_structure = (double*)malloc(sizeof(double)*w->nsite);
+        staggered_structure = (double*)malloc(sizeof(double)*(Lx*Ly));
         for(int j=0;j<Ly;j++) {
             for(int i=0;i<Lx;i++) {
                 int i_site = i+j*Lx;
@@ -94,15 +95,16 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
 }
 
 int main(int argc, char** argv) {
-    Lx = atoi(argv[1]);
-    Ly = atoi(argv[2]);
-    Q3 = atof(argv[3]);
-    Beta = atof(argv[4]);
-    Seed = atoi(argv[5]);
+    Mode = atoi(argv[1]);
+    Lx = atoi(argv[2]);
+    Ly = atoi(argv[3]);
+    Q3 = atof(argv[4]);
+    Beta = atof(argv[5]);
+    Seed = atoi(argv[6]);
 
-    int thermal = atoi(argv[6]);
-    int nsweep  = atoi(argv[7]);
-    int nthread = atoi(argv[8]);
+    int thermal = atoi(argv[7]);
+    int nsweep  = atoi(argv[8]);
+    int nthread = atoi(argv[9]);
 
     gsl_rng* rng[nthread];
     for(int i=0;i<nthread;i++) {
@@ -111,6 +113,10 @@ int main(int argc, char** argv) {
     }
 
     model* m = jq3_ladder_square(Lx,Ly,Q3);
+    if(Mode==1) {
+        free_model(m);
+        m = jq3_ladder_square_impurity(Lx,Ly,Q3);
+    }
 
     int mcap = 2.0*(m->sweight)*Beta/nthread;
     if(mcap<1024) mcap=1024;
