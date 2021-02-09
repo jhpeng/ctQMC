@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
         double t4 = omp_get_wtime();
         flip_cluster_omp(w,rng);
         double end = omp_get_wtime();
+        //check_world_line_omp_configuration(w,m);
 
         int noo=0;
         for(int j=0;j<nthread;j++)
