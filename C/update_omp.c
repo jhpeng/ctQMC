@@ -357,7 +357,7 @@ void clustering_crossing_omp(world_line_omp* w) {
 
     for(int i=0;i<nsite;i++) {
         if(w->first[i]!=-1) {
-            merge(w->cluster,w->weight,w->first[i],w->last[nthread*nsite+i]);
+            merge(w->cluster,w->weight,w->first[i],w->last[(nthread-1)*nsite+i]);
         }
     }
 }
@@ -466,4 +466,55 @@ void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
             }
         }
     }
+}
+
+int check_world_line_omp_configuration(world_line_omp* w, model* m) {
+    int nsite = w->nsite;
+    int check=1;
+
+#ifdef using_omp
+    omp_set_num_threads(w->nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+#else
+    for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
+#endif
+        
+        int i,j;
+        vertex* sequence = w->sequenceB[i_thread];
+        if(w->flag[i_thread])
+            sequence = w->sequenceA[i_thread];
+            
+        for(i=0;i<nsite;i++)
+            w->pstate[i_thread*nsite+i] = w->istate[i_thread*nsite+i];
+        
+        int bond,hNspin,i_site;
+        vertex* v;
+        for(i=0;i<(w->len[i_thread]);i++) {
+            v = &(sequence[i]);
+            bond   = v->bond;
+            hNspin = v->hNspin;
+
+            for(j=0;j<hNspin;j++) {
+                i_site = m->bond2index[bond*(m->mhnspin)+j];
+                if(w->pstate[i_thread*nsite+i_site]!=(v->state[j])) {
+                    printf("something wrong for the inner link!\n");
+                    check=0;
+                }
+                w->pstate[i_thread*nsite+i_site] = v->state[j+hNspin];
+            }
+        }
+
+        #pragma omp barrier
+        int n_thread = (i_thread+1)%(w->nthread);
+        for(i=0;i<nsite;i++) {
+            if((w->pstate[i_thread*nsite+i])!=(w->istate[n_thread*nsite+i])) {
+                    printf("something wrong for the boundary : %d\n",i);
+                    check=0;
+            }
+        }
+    }
+
+    return check;
 }

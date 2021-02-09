@@ -17,4 +17,6 @@ void clustering_crossing_omp(world_line_omp* w);
 
 void flip_cluster_omp(world_line_omp* w, gsl_rng** rng);
 
+int check_world_line_omp_configuration(world_line_omp* w, model* m);
+
 #endif
