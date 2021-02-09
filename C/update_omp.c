@@ -506,7 +506,12 @@ int check_world_line_omp_configuration(world_line_omp* w, model* m) {
             }
         }
 
+#ifdef using_omp
         #pragma omp barrier
+#else
+    }
+    for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
+#endif
         int n_thread = (i_thread+1)%(w->nthread);
         for(i=0;i<nsite;i++) {
             if((w->pstate[i_thread*nsite+i])!=(w->istate[n_thread*nsite+i])) {
