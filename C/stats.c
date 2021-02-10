@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #include "dtype.h"
@@ -100,4 +101,17 @@ void print_detail(estimator* e) {
     printf("std error = %.6e \n",err);
     printf("std div   = %.6e \n",std);
     printf("cor time  = %.6e \n",tau);
+}
+
+void save_estimator(estimator* e) {
+    char filename[128];
+    strcpy(filename,e->name);
+    strcat(filename,".dat");
+    FILE* ofile = fopen(filename,"w");
+
+    fprintf(ofile,"%d %d\n",e->nblock,e->bsize);
+    for(int i=0;i<(e->nblock);i++) {
+        fprintf(ofile,"%.18e \n",e->blocks[i]);
+    }
+    fclose(ofile);
 }

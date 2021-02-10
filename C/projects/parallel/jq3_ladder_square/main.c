@@ -123,7 +123,8 @@ int main(int argc, char** argv) {
 
     world_line_omp* w = malloc_world_line_omp(mcap,2*(m->mhnspin),(m->nsite),nthread);
 
-    estimator* samples[7];
+    int nobs=7;
+    estimator* samples[nobs];
     samples[0] = malloc_estimator(nsweep,"ms1");
     samples[1] = malloc_estimator(nsweep,"ms2");
     samples[2] = malloc_estimator(nsweep,"ms4");
@@ -183,6 +184,7 @@ int main(int argc, char** argv) {
 
     int i=0;
     int nblock=0;
+    double timer_print = omp_get_wtime();
     while(i<nsweep) {
         double start = omp_get_wtime();
         remove_vertices_omp(w);
@@ -196,17 +198,27 @@ int main(int argc, char** argv) {
 
         i++;
         
-        if(i>1024 && nblock!=(samples[0])->nblock){
-            nblock = (samples[0])->nblock;
-            printf("=========================================\n");
-            printf("L=%d q=%.4f beta=%.1f\n",Lx,Q3,Beta);
-            print_detail(samples[1]);
-            print_detail(samples[3]);
-            print_detail(samples[4]);
-            print_detail(samples[5]);
-            print_detail(samples[6]);
+        if(i>1024 && nblock!=(samples[0])->nblock) {
+            if((omp_get_wtime()-timer_print)>60.0) {
+                nblock = (samples[0])->nblock;
+                printf("=========================================\n");
+                printf("L=%d q=%.4f beta=%.1f\n",Lx,Q3,Beta);
+                print_detail(samples[1]);
+                print_detail(samples[3]);
+                print_detail(samples[4]);
+                print_detail(samples[5]);
+                print_detail(samples[6]);
+
+                for(int i_obs=0;i_obs<nobs;i_obs++)
+                    save_estimator(samples[i_obs]);
+
+                timer_print = omp_get_wtime();
+            }
         }
     }
+
+    for(int i_obs=0;i_obs<nobs;i_obs++)
+        save_estimator(samples[i_obs]);
 
     free_model(m);
     free_world_line_omp(w);
