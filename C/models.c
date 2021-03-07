@@ -12,12 +12,13 @@ static void create_cmf(double* cmf, double* weight, int length) {
     }
 }
 
-// graph name : singlet_proj_1
+/* graph name : singlet_proj_1
 //     2    3    
 //     |....|
 //      ....
 //     |    |
 //     0    1
+*/
 
 int link_rule_singlet_proj_1[] = {0,0,2,2,2,1,2,1};
 
@@ -28,12 +29,13 @@ int insert_rule_singlet_proj_1(int* state) {
     return 0;
 }
 
-// graph name : triplet_proj_1
+/* graph name : triplet_proj_1
 //     2   3    
 //      \ /
 //       X
 //      / \
 //     0   1
+*/
 
 int link_rule_triplet_proj_1[] = {0,1,1,0,2,2,1,1};
 
@@ -44,12 +46,13 @@ int insert_rule_triplet_proj_1(int* state) {
     return 0;
 }
 
-// graph name : singlet_proj_3
+/* graph name : singlet_proj_3
 //     6    7 8    9 10   11
 //     |....| |....| |....|
 //      ....   ....   ....
 //     |    | |    | |    |
 //     0    1 2    3 4    5
+*/
 
 int link_rule_singlet_proj_3[] 
         = {0,0,2,2,4,4,6,6,8,8,10,10,2,1,2,1,2,1,2,1,2,1,2,1};
@@ -65,12 +68,13 @@ int insert_rule_singlet_proj_3(int* state) {
     return 0;
 }
 
-// graph name : singlet_triplet_proj_2_1
+/* graph name : singlet_triplet_proj_2_1
 //     6    7 8    9  10  11
 //     |....| |....|   \ /
 //      ....   ....     X
 //     |    | |    |   / \
 //     0    1 2    3  4   5
+*/
 
 int link_rule_singlet_triplet_proj_2_1[] 
         = {0,0,2,2,4,5,6,6,8,8,5,4,2,1,2,1,2,2,2,1,2,1,1,1};
