@@ -116,6 +116,9 @@ int main(int argc, char** argv) {
     if(Mode==1) {
         free_model(m);
         m = jq3_ladder_square_impurity_spin_half(Lx,Ly,Q3);
+    } else if(Mode==2) {
+        free_model(m);
+        m = jq3_ladder_square_impurity_spin_one(Lx,Ly,Q3);
     }
 
     int mcap = 2.0*(m->sweight)*Beta/nthread;
