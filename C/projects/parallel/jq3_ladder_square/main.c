@@ -92,6 +92,7 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
     append_estimator(samples[3],msx);
     append_estimator(samples[4],chiu);
     append_estimator(samples[5],l);
+    append_estimator(samples[6],mz*mz*0.25);
 }
 
 int main(int argc, char** argv) {
@@ -126,7 +127,7 @@ int main(int argc, char** argv) {
 
     world_line_omp* w = malloc_world_line_omp(mcap,2*(m->mhnspin),(m->nsite),nthread);
 
-    int nobs=7;
+    int nobs=8;
     estimator* samples[nobs];
     samples[0] = malloc_estimator(nsweep,"ms1");
     samples[1] = malloc_estimator(nsweep,"ms2");
@@ -134,7 +135,8 @@ int main(int argc, char** argv) {
     samples[3] = malloc_estimator(nsweep,"Xs");
     samples[4] = malloc_estimator(nsweep,"Xu");
     samples[5] = malloc_estimator(nsweep,"Noo");
-    samples[6] = malloc_estimator(nsweep,"time");
+    samples[6] = malloc_estimator(nsweep,"mz2");
+    samples[7] = malloc_estimator(nsweep,"time");
 
     w->beta = Beta;
     for(int i=0;i<(w->nsite);i++) {
@@ -197,7 +199,7 @@ int main(int argc, char** argv) {
         flip_cluster_omp(w,rng);
         measurement(w,m,samples);
         double end = omp_get_wtime();
-        append_estimator(samples[6],end-start);
+        append_estimator(samples[7],end-start);
 
         i++;
         
@@ -206,11 +208,12 @@ int main(int argc, char** argv) {
                 nblock = (samples[0])->nblock;
                 printf("=========================================\n");
                 printf("L=%d q=%.4f beta=%.1f\n",Lx,Q3,Beta);
+                print_detail(samples[6]);
                 print_detail(samples[1]);
                 print_detail(samples[3]);
                 print_detail(samples[4]);
                 print_detail(samples[5]);
-                print_detail(samples[6]);
+                print_detail(samples[7]);
 
                 for(int i_obs=0;i_obs<nobs;i_obs++)
                     save_estimator(samples[i_obs]);
