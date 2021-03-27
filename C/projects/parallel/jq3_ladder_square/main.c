@@ -43,7 +43,7 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
         w->pstate[i] = w->istate[i];
     }
 
-    int l=0;
+    double l=0;
     for(int i_thread=0;i_thread<(w->nthread);i_thread++) {
 
         vertex* sequence = w->sequenceB[i_thread];
@@ -92,7 +92,8 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
     append_estimator(samples[3],msx);
     append_estimator(samples[4],chiu);
     append_estimator(samples[5],l);
-    append_estimator(samples[6],mz*mz*0.25);
+    append_estimator(samples[6],l*l);
+    append_estimator(samples[7],mz*mz*0.25);
 }
 
 int main(int argc, char** argv) {
@@ -127,7 +128,7 @@ int main(int argc, char** argv) {
 
     world_line_omp* w = malloc_world_line_omp(mcap,2*(m->mhnspin),(m->nsite),nthread);
 
-    int nobs=8;
+    int nobs=9;
     estimator* samples[nobs];
     samples[0] = malloc_estimator(nsweep,"ms1");
     samples[1] = malloc_estimator(nsweep,"ms2");
@@ -135,8 +136,9 @@ int main(int argc, char** argv) {
     samples[3] = malloc_estimator(nsweep,"Xs");
     samples[4] = malloc_estimator(nsweep,"Xu");
     samples[5] = malloc_estimator(nsweep,"Noo");
-    samples[6] = malloc_estimator(nsweep,"mz2");
-    samples[7] = malloc_estimator(nsweep,"time");
+    samples[6] = malloc_estimator(nsweep,"Noo2");
+    samples[7] = malloc_estimator(nsweep,"mz2");
+    samples[8] = malloc_estimator(nsweep,"time");
 
     w->beta = Beta;
     for(int i=0;i<(w->nsite);i++) {
@@ -199,7 +201,7 @@ int main(int argc, char** argv) {
         flip_cluster_omp(w,rng);
         measurement(w,m,samples);
         double end = omp_get_wtime();
-        append_estimator(samples[7],end-start);
+        append_estimator(samples[8],end-start);
 
         i++;
         
@@ -213,7 +215,7 @@ int main(int argc, char** argv) {
                 print_detail(samples[3]);
                 print_detail(samples[4]);
                 print_detail(samples[5]);
-                print_detail(samples[7]);
+                print_detail(samples[8]);
 
                 for(int i_obs=0;i_obs<nobs;i_obs++)
                     save_estimator(samples[i_obs]);
@@ -235,6 +237,8 @@ int main(int argc, char** argv) {
     free_estimator(samples[4]);
     free_estimator(samples[5]);
     free_estimator(samples[6]);
+    free_estimator(samples[7]);
+    free_estimator(samples[8]);
 
     for(int i=0;i<nthread;i++)
         gsl_rng_free(rng[i]);
