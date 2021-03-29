@@ -6,6 +6,7 @@
 #include "models.h"
 #include "update_omp.h"
 #include "stats.h"
+#include "union_find.h"
 
 int Mode;
 int Lx;
@@ -14,7 +15,8 @@ double Q3;
 double Beta;
 unsigned long int Seed;
 
-double* staggered_structure=NULL;
+static double* staggered_structure=NULL;
+static int* boundary_clusters=NULL;
 void measurement(world_line_omp* w, model* m, estimator** samples) {
     if(staggered_structure==NULL) {
         staggered_structure = (double*)malloc(sizeof(double)*(Lx*Ly));
@@ -86,6 +88,36 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
         ms4 = ms*ms*ms*ms/0.0625/nsite/nsite/nsite/nsite;
     }
 
+    //computing temperal winding number
+    if(boundary_clusters==NULL){
+        boundary_clusters = (int*)malloc(sizeof(int)*nsite);
+    }
+    double temp2=0;
+    for(int i=0;i<nsite;i++){
+        if(w->first[i]==-1){
+            boundary_clusters[i]=-1;
+            temp2++;
+        } else {
+            int r = root(w->cluster,w->first[i]);
+            boundary_clusters[i]=r;
+            w->weight[r] = 0;
+        }
+    }
+
+    for(int i=0;i<nsite;i++){
+        if(boundary_clusters[i]!=-1){
+            w->weight[boundary_clusters[i]] += w->istate[i];
+        }
+    }
+
+    for(int i=0;i<nsite;i++){
+        if(boundary_clusters[i]!=-1){
+            double temp = w->weight[boundary_clusters[i]]; 
+            w->weight[boundary_clusters[i]] = 0; 
+            temp2 += temp*temp;
+        }
+    }
+
     append_estimator(samples[0],ms1);
     append_estimator(samples[1],ms2);
     append_estimator(samples[2],ms4);
@@ -94,6 +126,7 @@ void measurement(world_line_omp* w, model* m, estimator** samples) {
     append_estimator(samples[5],l);
     append_estimator(samples[6],l*l);
     append_estimator(samples[7],mz*mz*0.25);
+    append_estimator(samples[8],temp2*0.25);
 }
 
 int main(int argc, char** argv) {
@@ -138,7 +171,8 @@ int main(int argc, char** argv) {
     samples[5] = malloc_estimator(nsweep,"Noo");
     samples[6] = malloc_estimator(nsweep,"Noo2");
     samples[7] = malloc_estimator(nsweep,"mz2");
-    samples[8] = malloc_estimator(nsweep,"time");
+    samples[8] = malloc_estimator(nsweep,"temp2");
+    samples[9] = malloc_estimator(nsweep,"time");
 
     w->beta = Beta;
     for(int i=0;i<(w->nsite);i++) {
@@ -201,7 +235,7 @@ int main(int argc, char** argv) {
         flip_cluster_omp(w,rng);
         measurement(w,m,samples);
         double end = omp_get_wtime();
-        append_estimator(samples[8],end-start);
+        append_estimator(samples[9],end-start);
 
         i++;
         
@@ -210,12 +244,11 @@ int main(int argc, char** argv) {
                 nblock = (samples[0])->nblock;
                 printf("=========================================\n");
                 printf("L=%d q=%.4f beta=%.1f\n",Lx,Q3,Beta);
-                print_detail(samples[6]);
-                print_detail(samples[1]);
-                print_detail(samples[3]);
-                print_detail(samples[4]);
                 print_detail(samples[5]);
+                print_detail(samples[6]);
+                print_detail(samples[7]);
                 print_detail(samples[8]);
+                print_detail(samples[9]);
 
                 for(int i_obs=0;i_obs<nobs;i_obs++)
                     save_estimator(samples[i_obs]);
