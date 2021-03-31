@@ -12,24 +12,26 @@ void append_estimator(estimator* e, double sample) {
     e->samples[e->n] = sample;
     e->n++;
 
-    if(e->n == (e->bsize)*(e->nblock+1)) {
+    if(e->n == (e->bsize)) {
         int i;
         double b = 0;
 
         for(i=0;i<(e->bsize);i++) 
-            b += e->samples[(e->bsize)*(e->nblock)+i];
+            b += e->samples[i];
 
         b = b/(e->bsize);
         e->blocks[e->nblock] = b;
         e->nblock++;
 
-        if(e->nblock==1024) {
-            for(i=0;i<512;i++)
+        if(e->nblock==8192) {
+            for(i=0;i<4096;i++)
                 e->blocks[i] = (e->blocks[2*i] + e->blocks[2*i+1])*0.5;
 
-            e->nblock = 512;
+            e->nblock = 4096;
             e->bsize *= 2;
         }
+
+        e->n=0;
     }
 }
 
@@ -88,19 +90,19 @@ static double stderror(estimator* e) {
 void print_detail(estimator* e) {
     double mean = mean_blocks(e);
     double err  = stderror(e);
-    double std  = std_samples(e);
+    //double std  = std_samples(e);
 
-    double std2 = std*std;
-    double tau = err*err/std2*((e->bsize)*(e->nblock));
-    tau = (tau-1)*0.5;
+    //double std2 = std*std;
+    //double tau = err*err/std2*((e->bsize)*(e->nblock));
+    //tau = (tau-1)*0.5;
 
     printf("-------------------------------\n");
     printf("Observable : %s \n",e->name);
     printf("Nblock=%d Bsize=%d \n",e->nblock,e->bsize);
     printf("mean      = %.6e \n",mean);
     printf("std error = %.6e \n",err);
-    printf("std div   = %.6e \n",std);
-    printf("cor time  = %.6e \n",tau);
+    //printf("std div   = %.6e \n",std);
+    //printf("cor time  = %.6e \n",tau);
 }
 
 void save_estimator(estimator* e) {

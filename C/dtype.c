@@ -245,7 +245,7 @@ estimator* malloc_estimator(int length, char name[128]) {
     estimator* e = (estimator*)malloc(sizeof(estimator));
 
     e->samples = (double*)malloc(sizeof(double)*length);
-    e->blocks  = (double*)malloc(sizeof(double)*1024);
+    e->blocks  = (double*)malloc(sizeof(double)*8192);
     strcpy(e->name,name);
     e->length = length;
     e->n = 0;
