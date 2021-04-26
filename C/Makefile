@@ -31,7 +31,8 @@ OBJSDIR = object
 MAIN	= exe
 
 # define the main srouce file
-MAINSRC = projects/parallel/jq3_ladder_square/main.c
+#MAINSRC = projects/parallel/jq3_ladder_square/main.c
+MAINSRC = projects/qlmodel/main.c
 
 all: $(MAIN)
 
