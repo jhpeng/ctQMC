@@ -237,7 +237,7 @@ void clustering_inner_omp(world_line_omp* w, model* m) {
         }
 
         vertex* sequence = w->sequenceB[i_thread];
-        if(w->flag) 
+        if(w->flag[i_thread]) 
             sequence = w->sequenceA[i_thread];
 
         for(i=0;i<(w->len[i_thread]);i++) {
