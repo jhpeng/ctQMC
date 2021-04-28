@@ -14,7 +14,96 @@ double Lambda;
 double Beta;
 unsigned long int Seed;
 
-static int referent_conf(int* state){
+static void insert_gauss_law_graph(world_line_omp* w, model*m, int n, int bond) {
+    vertex* sequence = w->sequenceB[w->nthread-1];
+    if(w->flag[w->nthread-1])
+        sequence = w->sequenceA[w->nthread-1];
+
+    int u[4];
+    vertex* v;
+    v = &(sequence[n]);
+    v->tau    = 2.0;
+    v->bond   = bond;
+    v->hNspin = 4;
+    
+    u[0] = m->bond2index[bond*(m->mhnspin)+0];
+    u[1] = m->bond2index[bond*(m->mhnspin)+1];
+    u[2] = m->bond2index[bond*(m->mhnspin)+2];
+    u[3] = m->bond2index[bond*(m->mhnspin)+3];
+
+    v->state[0] = w->istate[u[0]];
+    v->state[1] = w->istate[u[1]];
+    v->state[2] = w->istate[u[2]];
+    v->state[3] = w->istate[u[3]];
+    v->state[4] = w->istate[u[0]];
+    v->state[5] = w->istate[u[1]];
+    v->state[6] = w->istate[u[2]];
+    v->state[7] = w->istate[u[3]];
+}
+
+static void gauss_law(world_line_omp* w, model* m, gsl_rng** rng) {
+    int lsize = Lx*Ly;
+    int len = (w->len[w->nthread-1]) + lsize;
+    realloc_world_line_omp_vertex(w, len, w->nthread-1);
+
+    omp_set_num_threads(w->nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+        int start = lsize*i_thread/(w->nthread);
+        int end = lsize*(i_thread+1)/(w->nthread);
+
+        int u1,u2,u3,u4,bond,n;
+        int state[4];
+        int charge;
+
+        for(int i_site=start; i_site<end; i_site++) {
+            n = w->len[w->nthread-1]+i_site;
+            bond = 3*lsize+4*i_site+3;
+            u1 = m->bond2index[bond*(m->mhnspin)+0];
+            u2 = m->bond2index[bond*(m->mhnspin)+1];
+            u3 = m->bond2index[bond*(m->mhnspin)+2];
+            u4 = m->bond2index[bond*(m->mhnspin)+3];
+
+            state[0] = w->istate[u1];
+            state[1] = w->istate[u2];
+            state[2] = w->istate[u3]*(-1);
+            state[3] = w->istate[u4]*(-1);
+
+            charge = state[0]+state[1]+state[2]+state[3];
+
+            if(charge==0) {
+                if(state[0]==state[1]) {
+                    if(gsl_rng_uniform_pos(rng[i_thread])<0.5){
+                        bond = 3*lsize+4*i_site+0;
+                    } else {
+                        bond = 3*lsize+4*i_site+2;
+                    }
+                } else if(state[0]==state[2]) {
+                    if(gsl_rng_uniform_pos(rng[i_thread])<0.5){
+                        bond = 3*lsize+4*i_site+0;
+                    } else {
+                        bond = 3*lsize+4*i_site+1;
+                    }
+                }else if(state[0]==state[3]) {
+                    if(gsl_rng_uniform_pos(rng[i_thread])<0.5){
+                        bond = 3*lsize+4*i_site+1;
+                    } else {
+                        bond = 3*lsize+4*i_site+2;
+                    }
+                }
+            } else {
+                bond = 3*lsize+4*i_site+3;
+            }
+
+            insert_gauss_law_graph(w, m, n, bond);
+        }
+    }
+
+    w->len[w->nthread-1] += lsize;
+}
+
+static int reference_conf(int* state){
     if(state[0]*state[1]==1){
         if(state[2]*state[3]==1){
             if(state[1]*state[2]==-1){
@@ -25,7 +114,7 @@ static int referent_conf(int* state){
     return 0;
 }
 
-int count_referent_conf(world_line_omp* w) {
+int count_reference_conf(world_line_omp* w) {
     int count=0;
     for(int y=0;y<Ly;y++) {
         for(int x=0;x<Lx;x++) {
@@ -40,7 +129,7 @@ int count_referent_conf(world_line_omp* w) {
             state[2] = w->istate[u3];
             state[3] = w->istate[u4];
 
-            if(referent_conf(state)) count++;
+            if(reference_conf(state)) count++;
         }
     }
 
@@ -61,19 +150,19 @@ void measurement(world_line_omp* w, model* m) {
     printf("winding number x : %d\n",winding_x);
     printf("winding number y : %d\n",winding_y);
 
-    int n_ref_conf = count_referent_conf(w);
+    int n_ref_conf = count_reference_conf(w);
     printf("nref : %d \n",n_ref_conf);
 }
 
 int main(int argc, char** argv) {
     Lx = 64;
     Ly = 64;
-    Lambda = 0.8;
-    Beta = 64.0;
+    Lambda = 0.1;
+    Beta = 1.0;
     Seed = 389724;
 
-    int nthread = 4;
-    int thermal = 1000;
+    int nthread = 1;
+    int thermal = 10000;
 
     // Setting up the random number generator
     gsl_rng* rng[nthread];
@@ -120,6 +209,7 @@ int main(int argc, char** argv) {
         remove_vertices_omp(w);
         double t1 = omp_get_wtime();
         insert_vertices_omp(w,m,rng);
+        gauss_law(w,m,rng);
         double t2 = omp_get_wtime();
         clustering_inner_omp(w,m);
         double t3 = omp_get_wtime();
@@ -136,7 +226,7 @@ int main(int argc, char** argv) {
         times[i%50] = end-start;
 
         printf("-----------------------------------------\n");
-        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo,nthread);
+        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo-4096,nthread);
         if(i>50) {
             double mtime=0;
             for(int j=0;j<50;j++) mtime+=times[j];

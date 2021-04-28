@@ -630,7 +630,7 @@ model* quantum_link_model_2d_square(int lx, int ly, double lambda) {
             int u1 = x+y*lx;
             int u2 = x+y*lx+lx*ly;
             int u3 = (x+lx-1)%lx+y*lx;
-            int u4 = x+((y+ly-1)%ly)*lx+lx+ly;
+            int u4 = x+((y+ly-1)%ly)*lx+lx*ly;
 
             m->bond2type[n]   = 3;
             m->bond2hNspin[n] = 4;
