@@ -103,6 +103,33 @@ static void gauss_law(world_line_omp* w, model* m, gsl_rng** rng) {
     w->len[w->nthread-1] += lsize;
 }
 
+void initial_state_no_charge(world_line_omp* w, int wx, int wy){
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<Lx;x++) {
+            w->istate[x+y*Lx]         = 1-(x+y)%2*2;
+            w->istate[x+y*Lx + Lx*Ly] = (x+y)%2*2-1;
+        }
+    }
+
+    for(int y=0;y<wx;y++) {
+        for(int x=0;x<Lx;x++) {
+            w->istate[x+y*Lx] = 1;
+        }
+    }
+
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<wy;x++) {
+            w->istate[x+y*Lx+Lx*Ly] = 1;
+        }
+    }
+
+    for(int j=1;j<w->nthread;j++) {
+        for(int i=0;i<(w->nsite);i++) {
+            w->istate[i+(w->nsite)*j] = w->istate[i];
+        }
+    }
+}
+
 static int reference_conf(int* state){
     if(state[0]*state[1]==1){
         if(state[2]*state[3]==1){
@@ -182,25 +209,7 @@ int main(int argc, char** argv) {
     w->beta = Beta;
 
     // Setting up the initial condition
-    for(int y=0;y<Ly;y++) {
-        for(int x=0;x<Lx;x++) {
-            w->istate[x+y*Lx]         = 1-(x+y)%2*2;
-            w->istate[x+y*Lx + Lx*Ly] = (x+y)%2*2-1;
-/*
-            if(y==Ly/2) {
-                w->istate[x+y*Lx] = 1;
-            }
-
-            if(x==Lx/2){
-                w->istate[x+y*Lx+Lx*Ly] = -1;
-            }*/
-        }
-    }
-    for(int j=1;j<nthread;j++) {
-        for(int i=0;i<(w->nsite);i++) {
-            w->istate[i+(w->nsite)*j] = w->istate[i];
-        }
-    }
+    initial_state_no_charge(w,0,10);
 
     // Thermalization
     double times[50];
