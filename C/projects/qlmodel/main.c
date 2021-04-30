@@ -8,11 +8,59 @@
 #include "stats.h"
 #include "union_find.h"
 
+typedef struct block{
+    double* samples;
+    int nsample;
+    int index;
+    int cap;
+} block;
+
+// parameter
 int Lx;
 int Ly;
 double Lambda;
 double Beta;
 unsigned long int Seed;
+
+// samples data
+block* Nog0_block;
+block* Nog1_block;
+block* Nog2_block;
+
+block* block_alloc(int cap) {
+    block* data = (block*)malloc(sizeof(block));
+    data->samples = (double*)malloc(sizeof(double)*cap);
+    data->nsample = 0;
+    data->index   = 0;
+    data->cap     = cap;
+
+    return data;
+}
+
+void block_free(block* data) {
+    free(data->samples);
+    free(data);
+}
+
+void append(block* data, double sample) {
+    if(data->index == data->cap) 
+        data->index = 0;
+    
+    data->samples[data->index] = sample;
+    data->index++;
+
+    if(data->nsample < data->cap) data->nsample++;
+}
+
+double mean(block* data) {
+    double sum=0;
+
+    for(int i=0;i<(data->nsample);i++) {
+        sum += data->samples[i];
+    }
+
+    return sum/(data->nsample);
+}
 
 static void insert_gauss_law_graph(world_line_omp* w, model*m, int n, int bond) {
     vertex* sequence = w->sequenceB[w->nthread-1];
@@ -103,6 +151,30 @@ static void gauss_law(world_line_omp* w, model* m, gsl_rng** rng) {
     w->len[w->nthread-1] += lsize;
 }
 
+void print_charge(world_line_omp* w) {
+    int state[4],charge;
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<Lx;x++) {
+            int u1 = x+y*Lx;
+            int u2 = x+y*Lx+Lx*Ly;
+            int u3 = (x+Lx-1)%Lx+y*Lx;
+            int u4 = x+((y+Ly-1)%Ly)*Lx+Lx*Ly;
+
+            state[0] = w->istate[u1];
+            state[1] = w->istate[u2];
+            state[2] = w->istate[u3]*(-1);
+            state[3] = w->istate[u4]*(-1);
+
+            charge = state[0]+state[1]+state[2]+state[3];
+
+            if(charge==0) printf("%d ",charge);
+            else if(charge<0) printf("- ");
+            else if(charge>0) printf("+ ");
+        }
+        printf("\n");
+    }
+}
+
 void initial_state_no_charge(world_line_omp* w, int wx, int wy){
     for(int y=0;y<Ly;y++) {
         for(int x=0;x<Lx;x++) {
@@ -121,6 +193,26 @@ void initial_state_no_charge(world_line_omp* w, int wx, int wy){
         for(int x=0;x<wy;x++) {
             w->istate[x+y*Lx+Lx*Ly] = 1;
         }
+    }
+
+    for(int j=1;j<w->nthread;j++) {
+        for(int i=0;i<(w->nsite);i++) {
+            w->istate[i+(w->nsite)*j] = w->istate[i];
+        }
+    }
+}
+
+void initial_state_charge_1(world_line_omp* w, int distance) {
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<Lx;x++) {
+            w->istate[x+y*Lx]         = 1-(y%2)*2;
+            w->istate[x+y*Lx + Lx*Ly] = (x%2)*2-1;
+        }
+    }
+
+    for(int x=(Lx-distance)/2;x<(Lx+distance)/2;x++) {
+        int y = Ly/2;
+        w->istate[x+y*Lx] *= -1;
     }
 
     for(int j=1;j<w->nthread;j++) {
@@ -163,9 +255,98 @@ int count_reference_conf(world_line_omp* w) {
     return count;
 }
 
+void count_graph_number(world_line_omp* w, model* m, int* nog) {
+    int nthread = w->nthread;
+    int nog0[nthread];
+    int nog1[nthread];
+    int nog2[nthread];
+
+    omp_set_num_threads(nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+        int type,bond;
+
+        nog0[i_thread] = 0;
+        nog1[i_thread] = 0;
+        nog2[i_thread] = 0;
+
+        vertex* sequence = w->sequenceB[i_thread];
+        if(w->flag[i_thread])
+            sequence = w->sequenceA[i_thread];
+
+        for(int i=0;i<(w->len[i_thread]);i++) {
+            bond = (sequence[i]).bond;
+            type = m->bond2type[bond];
+
+            if(type==0) nog0[i_thread]++;
+            else if(type==1) nog1[i_thread]++;
+            else if(type==2) nog2[i_thread]++;
+        }
+    }
+
+    nog[0]=0;
+    nog[1]=0;
+    nog[2]=0;
+    for(int i_thread=0;i_thread<nthread;i_thread++) {
+        nog[0] += nog0[i_thread];
+        nog[1] += nog1[i_thread];
+        nog[2] += nog2[i_thread];
+    }
+}
+
+int count_local_number=1;
+unsigned long int* nog0_local_number;
+unsigned long int* nog1_local_number;
+unsigned long int* nog2_local_number;
+
+void count_local_graph_number(world_line_omp* w, model* m) {
+    int nthread = w->nthread;
+    int lsize = Lx*Ly;
+
+    if(count_local_number) {
+        nog0_local_number = (unsigned long int*)malloc(sizeof(unsigned long int)*lsize*nthread);
+        nog1_local_number = (unsigned long int*)malloc(sizeof(unsigned long int)*lsize*nthread);
+        nog2_local_number = (unsigned long int*)malloc(sizeof(unsigned long int)*lsize*nthread);
+
+        for(int i=0;i<(nthread*lsize);i++) {
+            nog0_local_number[i] = 0;
+            nog1_local_number[i] = 0;
+            nog2_local_number[i] = 0;
+        }
+
+        count_local_number = 0;
+    }
+
+    omp_set_num_threads(nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+        int type,bond;
+
+        vertex* sequence = w->sequenceB[i_thread];
+        if(w->flag[i_thread])
+            sequence = w->sequenceA[i_thread];
+
+        for(int i=0;i<(w->len[i_thread]);i++) {
+            bond = (sequence[i]).bond;
+            type = m->bond2type[bond];
+
+            if(type==0) {
+                nog0_local_number[i_thread*lsize+(bond%lsize)]++;
+            } else if(type==1) {
+                nog1_local_number[i_thread*lsize+(bond%lsize)]++;
+            } else if(type==2) {
+                nog2_local_number[i_thread*lsize+(bond%lsize)]++;
+            }
+        }
+    }
+}
+
 void measurement(world_line_omp* w, model* m) {
     int winding_x = 0;
     int winding_y = 0;
+    int nog[3];
 
     for(int i=0;i<Lx*Ly;i++) {
         winding_x += w->istate[i];
@@ -179,17 +360,36 @@ void measurement(world_line_omp* w, model* m) {
 
     int n_ref_conf = count_reference_conf(w);
     printf("nref : %d \n",n_ref_conf);
+
+    double energy=0;
+    for(int j=0;j<w->nthread;j++)
+        energy+=w->len[j];
+    energy = -(energy-Lx*Ly)/Beta;
+
+    printf("energy : %e \n",energy);
+
+    count_graph_number(w,m,nog);
+    append(Nog0_block,((double)nog[0]/Beta));
+    append(Nog1_block,((double)nog[1]/Beta));
+    append(Nog2_block,((double)nog[2]/Beta));
+
+    printf("nog0/beta : %e \n",mean(Nog0_block));
+    printf("nog1/beta : %e \n",mean(Nog1_block));
+    printf("nog2/beta : %e \n",mean(Nog2_block));
+
+    count_local_graph_number(w,m);
 }
 
 int main(int argc, char** argv) {
-    Lx = 64;
-    Ly = 64;
+    Lx = 32;
+    Ly = 32;
     Lambda = 0.1;
     Beta = 1.0;
-    Seed = 389724;
+    Seed = 47583;
 
     int nthread = 1;
     int thermal = 10000;
+    int nsample = 4096;
 
     // Setting up the random number generator
     gsl_rng* rng[nthread];
@@ -209,7 +409,13 @@ int main(int argc, char** argv) {
     w->beta = Beta;
 
     // Setting up the initial condition
-    initial_state_no_charge(w,0,10);
+    //initial_state_no_charge(w,0,0);
+    initial_state_charge_1(w,8);
+
+    // Settinh the samples data
+    Nog0_block = block_alloc(nsample);
+    Nog1_block = block_alloc(nsample);
+    Nog2_block = block_alloc(nsample);
 
     // Thermalization
     double times[50];
@@ -235,7 +441,8 @@ int main(int argc, char** argv) {
         times[i%50] = end-start;
 
         printf("-----------------------------------------\n");
-        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo-4096,nthread);
+        printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
+        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo-Lx*Ly,nthread);
         if(i>50) {
             double mtime=0;
             for(int j=0;j<50;j++) mtime+=times[j];
@@ -251,5 +458,6 @@ int main(int argc, char** argv) {
         printf("flip_cluster_omp        : %f  \n",(end-t4)/(end-start));
 
         measurement(w,m);
+        print_charge(w);
     }
 }
