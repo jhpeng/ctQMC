@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <gsl/gsl_rng.h>
 #include <omp.h>
 
@@ -20,6 +21,7 @@ int Lx;
 int Ly;
 double Lambda;
 double Beta;
+int Distance;
 unsigned long int Seed;
 
 // samples data
@@ -295,7 +297,7 @@ void count_graph_number(world_line_omp* w, model* m, int* nog) {
     }
 }
 
-int count_local_number=1;
+int count_local_number=0;
 unsigned long int* nog0_local_number;
 unsigned long int* nog1_local_number;
 unsigned long int* nog2_local_number;
@@ -304,7 +306,7 @@ void count_local_graph_number(world_line_omp* w, model* m) {
     int nthread = w->nthread;
     int lsize = Lx*Ly;
 
-    if(count_local_number) {
+    if(count_local_number==0) {
         nog0_local_number = (unsigned long int*)malloc(sizeof(unsigned long int)*lsize*nthread);
         nog1_local_number = (unsigned long int*)malloc(sizeof(unsigned long int)*lsize*nthread);
         nog2_local_number = (unsigned long int*)malloc(sizeof(unsigned long int)*lsize*nthread);
@@ -314,8 +316,6 @@ void count_local_graph_number(world_line_omp* w, model* m) {
             nog1_local_number[i] = 0;
             nog2_local_number[i] = 0;
         }
-
-        count_local_number = 0;
     }
 
     omp_set_num_threads(nthread);
@@ -341,6 +341,59 @@ void count_local_graph_number(world_line_omp* w, model* m) {
             }
         }
     }
+
+    count_local_number++;
+}
+
+void save_local_energy(world_line_omp* w) {
+    int nthread = w->nthread;
+    int lsize = Lx*Ly;
+
+    for(int i=0;i<lsize;i++) {
+        for(int i_thread=1;i_thread<nthread;i_thread++) {
+            nog0_local_number[i] += nog0_local_number[i_thread*lsize+i];
+            nog1_local_number[i] += nog1_local_number[i_thread*lsize+i];
+            nog2_local_number[i] += nog2_local_number[i_thread*lsize+i];
+        }
+    }
+
+    char nog0_file_name[128];
+    char nog1_file_name[128];
+    char nog2_file_name[128];
+
+    sprintf(nog0_file_name,"map/nog0_Lx_%d_Ly_%d_lambda_%.4f_beta_%.2f_distance_%d_seed_%ld.txt",Lx,Ly,Lambda,Beta,Distance,Seed);
+    sprintf(nog1_file_name,"map/nog1_Lx_%d_Ly_%d_lambda_%.4f_beta_%.2f_distance_%d_seed_%ld.txt",Lx,Ly,Lambda,Beta,Distance,Seed);
+    sprintf(nog2_file_name,"map/nog2_Lx_%d_Ly_%d_lambda_%.4f_beta_%.2f_distance_%d_seed_%ld.txt",Lx,Ly,Lambda,Beta,Distance,Seed);
+
+    FILE* nog0_file = fopen(nog0_file_name,"w");
+    FILE* nog1_file = fopen(nog1_file_name,"w");
+    FILE* nog2_file = fopen(nog2_file_name,"w");
+
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<Lx;x++) {
+            double local_energy;
+            local_energy = ((double)nog0_local_number[x+y*Lx])/Beta/count_local_number;
+            fprintf(nog0_file,"%.16e ",local_energy);
+
+            local_energy = ((double)nog1_local_number[x+y*Lx])/Beta/count_local_number;
+            fprintf(nog1_file,"%.16e ",local_energy);
+
+            local_energy = ((double)nog2_local_number[x+y*Lx])/Beta/count_local_number;
+            fprintf(nog2_file,"%.16e ",local_energy);
+        }
+        fprintf(nog0_file,"\n");
+        fprintf(nog1_file,"\n");
+        fprintf(nog2_file,"\n");
+    }
+
+    free(nog0_local_number);
+    free(nog1_local_number);
+    free(nog2_local_number);
+    count_local_number = 0;
+
+    fclose(nog0_file);
+    fclose(nog1_file);
+    fclose(nog2_file);
 }
 
 void measurement(world_line_omp* w, model* m) {
@@ -381,15 +434,16 @@ void measurement(world_line_omp* w, model* m) {
 }
 
 int main(int argc, char** argv) {
-    Lx = 32;
-    Ly = 32;
-    Lambda = 0.1;
-    Beta = 1.0;
+    Lx = 64;
+    Ly = 64;
+    Lambda = 0.2;
+    Beta = 64.0;
+    Distance = 30;
     Seed = 47583;
 
-    int nthread = 1;
-    int thermal = 10000;
-    int nsample = 4096;
+    int nthread = 6;
+    int thermal = 2000;
+    int nsample = 20000;
 
     // Setting up the random number generator
     gsl_rng* rng[nthread];
@@ -410,7 +464,7 @@ int main(int argc, char** argv) {
 
     // Setting up the initial condition
     //initial_state_no_charge(w,0,0);
-    initial_state_charge_1(w,8);
+    initial_state_charge_1(w,Distance);
 
     // Settinh the samples data
     Nog0_block = block_alloc(nsample);
@@ -432,7 +486,7 @@ int main(int argc, char** argv) {
         double t4 = omp_get_wtime();
         flip_cluster_omp(w,rng);
         double end = omp_get_wtime();
-        //check_world_line_omp_configuration(w,m);
+        check_world_line_omp_configuration(w,m);
 
         int noo=0;
         for(int j=0;j<nthread;j++)
@@ -457,7 +511,29 @@ int main(int argc, char** argv) {
         printf("clustering_crossing_omp : %f  \n",(t4-t3)/(end-start));
         printf("flip_cluster_omp        : %f  \n",(end-t4)/(end-start));
 
-        measurement(w,m);
-        print_charge(w);
+        //measurement(w,m);
+        //print_charge(w);
     }
+
+    for(int i=0;i<thermal;i++) {
+        remove_vertices_omp(w);
+        insert_vertices_omp(w,m,rng);
+        gauss_law(w,m,rng);
+        clustering_inner_omp(w,m);
+        clustering_crossing_omp(w);
+        flip_cluster_omp(w,rng);
+
+        int noo=0;
+        for(int j=0;j<nthread;j++)
+            noo+=w->len[j];
+
+        printf("-----------------------------------------\n");
+        printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
+        printf("nsweep:%d | Noo:%d | nthread=%d ",i,noo-Lx*Ly,nthread);
+
+        measurement(w,m);
+        //print_charge(w);
+    }
+
+    save_local_energy(w);
 }
