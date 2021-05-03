@@ -170,8 +170,9 @@ void print_charge(world_line_omp* w) {
             charge = state[0]+state[1]+state[2]+state[3];
 
             if(charge==0) printf("%d ",charge);
-            else if(charge<0) printf("- ");
-            else if(charge>0) printf("+ ");
+            else if(charge==-2) printf("- ");
+            else if(charge==2) printf("+ ");
+            else if(charge==-4 || charge==4) printf("2 ");
         }
         printf("\n");
     }
@@ -224,6 +225,31 @@ void initial_state_charge_1(world_line_omp* w, int distance) {
     }
 }
 
+void initial_state_charge_1_diag(world_line_omp* w, int distance) {
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<Lx;x++) {
+            w->istate[x+y*Lx]         = 1-(y%2)*2;
+            w->istate[x+y*Lx + Lx*Ly] = (x%2)*2-1;
+        }
+    }
+
+    for(int x=(Lx-distance)/2;x<(Lx+distance)/2;x++) {
+        int y = (Ly-distance)/2;
+        w->istate[x+y*Lx] *= -1;
+    }
+
+    for(int y=(Lx-distance)/2;y<(Lx+distance)/2;y++) {
+        int x = (Ly-distance)/2;
+        w->istate[x+y*Lx+Lx*Ly] *= -1;
+    }
+
+    for(int j=1;j<w->nthread;j++) {
+        for(int i=0;i<(w->nsite);i++) {
+            w->istate[i+(w->nsite)*j] = w->istate[i];
+        }
+    }
+}
+
 static int reference_conf(int* state){
     if(state[0]*state[1]==1){
         if(state[2]*state[3]==1){
@@ -233,68 +259,6 @@ static int reference_conf(int* state){
         }
     }
     return 0;
-}
-
-int count_reference_conf(world_line_omp* w) {
-    int count=0;
-    for(int y=0;y<Ly;y++) {
-        for(int x=0;x<Lx;x++) {
-            int u1 = x+y*Lx;
-            int u2 = (x+1)%Lx+y*Lx+Lx*Ly;
-            int u3 = x+((y+1)%Ly)*Lx;
-            int u4 = x+y*Lx+Lx*Ly;
-
-            int state[4];
-            state[0] = w->istate[u1];
-            state[1] = w->istate[u2];
-            state[2] = w->istate[u3];
-            state[3] = w->istate[u4];
-
-            if(reference_conf(state)) count++;
-        }
-    }
-
-    return count;
-}
-
-void count_graph_number(world_line_omp* w, model* m, int* nog) {
-    int nthread = w->nthread;
-    int nog0[nthread];
-    int nog1[nthread];
-    int nog2[nthread];
-
-    omp_set_num_threads(nthread);
-    #pragma omp parallel
-    {
-        int i_thread = omp_get_thread_num();
-        int type,bond;
-
-        nog0[i_thread] = 0;
-        nog1[i_thread] = 0;
-        nog2[i_thread] = 0;
-
-        vertex* sequence = w->sequenceB[i_thread];
-        if(w->flag[i_thread])
-            sequence = w->sequenceA[i_thread];
-
-        for(int i=0;i<(w->len[i_thread]);i++) {
-            bond = (sequence[i]).bond;
-            type = m->bond2type[bond];
-
-            if(type==0) nog0[i_thread]++;
-            else if(type==1) nog1[i_thread]++;
-            else if(type==2) nog2[i_thread]++;
-        }
-    }
-
-    nog[0]=0;
-    nog[1]=0;
-    nog[2]=0;
-    for(int i_thread=0;i_thread<nthread;i_thread++) {
-        nog[0] += nog0[i_thread];
-        nog[1] += nog1[i_thread];
-        nog[2] += nog2[i_thread];
-    }
 }
 
 int count_local_number=0;
@@ -396,6 +360,68 @@ void save_local_energy(world_line_omp* w) {
     fclose(nog2_file);
 }
 
+int count_reference_conf(world_line_omp* w) {
+    int count=0;
+    for(int y=0;y<Ly;y++) {
+        for(int x=0;x<Lx;x++) {
+            int u1 = x+y*Lx;
+            int u2 = (x+1)%Lx+y*Lx+Lx*Ly;
+            int u3 = x+((y+1)%Ly)*Lx;
+            int u4 = x+y*Lx+Lx*Ly;
+
+            int state[4];
+            state[0] = w->istate[u1];
+            state[1] = w->istate[u2];
+            state[2] = w->istate[u3];
+            state[3] = w->istate[u4];
+
+            if(reference_conf(state)) count++;
+        }
+    }
+
+    return count;
+}
+
+void count_graph_number(world_line_omp* w, model* m, int* nog) {
+    int nthread = w->nthread;
+    int nog0[nthread];
+    int nog1[nthread];
+    int nog2[nthread];
+
+    omp_set_num_threads(nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+        int type,bond;
+
+        nog0[i_thread] = 0;
+        nog1[i_thread] = 0;
+        nog2[i_thread] = 0;
+
+        vertex* sequence = w->sequenceB[i_thread];
+        if(w->flag[i_thread])
+            sequence = w->sequenceA[i_thread];
+
+        for(int i=0;i<(w->len[i_thread]);i++) {
+            bond = (sequence[i]).bond;
+            type = m->bond2type[bond];
+
+            if(type==0) nog0[i_thread]++;
+            else if(type==1) nog1[i_thread]++;
+            else if(type==2) nog2[i_thread]++;
+        }
+    }
+
+    nog[0]=0;
+    nog[1]=0;
+    nog[2]=0;
+    for(int i_thread=0;i_thread<nthread;i_thread++) {
+        nog[0] += nog0[i_thread];
+        nog[1] += nog1[i_thread];
+        nog[2] += nog2[i_thread];
+    }
+}
+
 void measurement(world_line_omp* w, model* m) {
     int winding_x = 0;
     int winding_y = 0;
@@ -436,14 +462,14 @@ void measurement(world_line_omp* w, model* m) {
 int main(int argc, char** argv) {
     Lx = 64;
     Ly = 64;
-    Lambda = 0.2;
+    Lambda = 0.36;
     Beta = 64.0;
     Distance = 30;
     Seed = 47583;
 
     int nthread = 6;
-    int thermal = 2000;
-    int nsample = 20000;
+    int thermal = 10000;
+    int nsample = 200000;
 
     // Setting up the random number generator
     gsl_rng* rng[nthread];
@@ -464,7 +490,8 @@ int main(int argc, char** argv) {
 
     // Setting up the initial condition
     //initial_state_no_charge(w,0,0);
-    initial_state_charge_1(w,Distance);
+    //initial_state_charge_1(w,Distance);
+    initial_state_charge_1_diag(w,Distance);
 
     // Settinh the samples data
     Nog0_block = block_alloc(nsample);
@@ -496,7 +523,7 @@ int main(int argc, char** argv) {
 
         printf("-----------------------------------------\n");
         printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
-        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo-Lx*Ly,nthread);
+        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo,nthread);
         if(i>50) {
             double mtime=0;
             for(int j=0;j<50;j++) mtime+=times[j];
@@ -515,7 +542,7 @@ int main(int argc, char** argv) {
         //print_charge(w);
     }
 
-    for(int i=0;i<thermal;i++) {
+    for(int i=0;i<nsample;i++) {
         remove_vertices_omp(w);
         insert_vertices_omp(w,m,rng);
         gauss_law(w,m,rng);
@@ -529,7 +556,7 @@ int main(int argc, char** argv) {
 
         printf("-----------------------------------------\n");
         printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
-        printf("nsweep:%d | Noo:%d | nthread=%d ",i,noo-Lx*Ly,nthread);
+        printf("nsweep:%d | Noo:%d | nthread=%d \n",i,noo,nthread);
 
         measurement(w,m);
         //print_charge(w);
