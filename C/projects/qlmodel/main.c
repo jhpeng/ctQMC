@@ -459,9 +459,23 @@ void measurement(world_line_omp* w, model* m) {
     count_local_graph_number(w,m);
 }
 
+void save_data() {
+    char data_file_name[128];
+    sprintf(data_file_name,"data/data_Lx_%d_Ly_%d_lambda_%.4f_beta_%.2f_distance_%d_seed_%ld.txt",Lx,Ly,Lambda,Beta,Distance,Seed);
+    FILE* data_file = fopen(data_file_name,"a");
+
+
+    fprintf(data_file,"%.16e ",mean(Nog0_block));
+    fprintf(data_file,"%.16e ",mean(Nog1_block));
+    fprintf(data_file,"%.16e ",mean(Nog2_block));
+    fprintf(data_file,"\n");
+
+    fclose(data_file);
+}
+
 int main(int argc, char** argv) {
-    Lx = 64;
-    Ly = 64;
+    Lx = 32;
+    Ly = 32;
     Lambda = 0.36;
     Beta = 64.0;
     Distance = 30;
@@ -469,7 +483,8 @@ int main(int argc, char** argv) {
 
     int nthread = 6;
     int thermal = 10000;
-    int nsample = 200000;
+    int nsample = 1000;
+    int nblock  = 200;
 
     // Setting up the random number generator
     gsl_rng* rng[nthread];
@@ -542,24 +557,27 @@ int main(int argc, char** argv) {
         //print_charge(w);
     }
 
-    for(int i=0;i<nsample;i++) {
-        remove_vertices_omp(w);
-        insert_vertices_omp(w,m,rng);
-        gauss_law(w,m,rng);
-        clustering_inner_omp(w,m);
-        clustering_crossing_omp(w);
-        flip_cluster_omp(w,rng);
+    for(int i_block=0;i_block<nblock;i_block++) {
+        for(int i=0;i<nsample;i++) {
+            remove_vertices_omp(w);
+            insert_vertices_omp(w,m,rng);
+            gauss_law(w,m,rng);
+            clustering_inner_omp(w,m);
+            clustering_crossing_omp(w);
+            flip_cluster_omp(w,rng);
 
-        int noo=0;
-        for(int j=0;j<nthread;j++)
-            noo+=w->len[j];
+            int noo=0;
+            for(int j=0;j<nthread;j++)
+                noo+=w->len[j];
 
-        printf("-----------------------------------------\n");
-        printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
-        printf("nsweep:%d | Noo:%d | nthread=%d \n",i,noo,nthread);
+            printf("-----------------------------------------\n");
+            printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
+            printf("nsweep:%d | Noo:%d | nthread=%d \n",i,noo,nthread);
 
-        measurement(w,m);
-        //print_charge(w);
+            measurement(w,m);
+            //print_charge(w);
+        }
+        save_data();
     }
 
     save_local_energy(w);
