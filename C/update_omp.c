@@ -380,8 +380,8 @@ void flip_cluster_omp(world_line_omp* w, gsl_rng** rng) {
         for(int i=start;i<end;i++) {
             if((w->cluster[i])==i) {
                 dis = gsl_rng_uniform_pos(rng[i_thread]);
-                if(dis<0.5) {
-                    w->weight[i] = 1;
+                if(dis<0.5 || w->weight[i]<0) {
+                    w->weight[i] =  1;
                 } else {
                     w->weight[i] = -1;
                 }

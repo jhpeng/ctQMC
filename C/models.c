@@ -112,6 +112,17 @@ int link_rule_spatial_2_2[]
 int link_rule_spatial_4[]
         = {0,0,0,0,0,0,0,0,8,1,1,1,1,1,1,1};
 
+/* graph name : spatial_4_frozen
+//     4    5    6    7
+//     |    |    |    |
+//     |----|----|----|
+//     |    |    |    |
+//     0    1    2    3
+*/
+
+int link_rule_spatial_4_frozen[]
+        = {0,0,0,0,0,0,0,0,-8,1,1,1,1,1,1,1};
+
 /* graph name : single_box_vertex_1
 //     4    5    6    7
 //     |____|....|____|
@@ -687,7 +698,7 @@ model* quantum_link_model_2d_square(int lx, int ly, double lambda) {
         m->link[3*4*mhnspin+i] = link_rule_spatial_2_2[i];
     }
     for(int i=0;i<4*mhnspin;i++) {
-        m->link[4*4*mhnspin+i] = link_rule_spatial_4[i];
+        m->link[4*4*mhnspin+i] = link_rule_spatial_4_frozen[i];
     }
 
     m->insert[0] = insert_rule_single_box_vertex_1;
