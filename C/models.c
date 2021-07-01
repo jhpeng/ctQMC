@@ -90,6 +90,17 @@ int insert_rule_singlet_triplet_proj_2_1(int* state) {
     return 0;
 }
 
+/* graph name : spatial_1_1_1_1
+//     4   5   6   7
+//     |   |   |   |
+//     |   |   |   |
+//     |   |   |   |
+//     0   1   2   3
+*/
+
+int link_rule_spatial_1_1_1_1[]
+        = {0,1,2,3,0,1,2,3,2,2,2,2,1,1,1,1};
+
 /* graph name : spatial_2_2
 //     4    5  6    7
 //     |    |  |    |
@@ -696,6 +707,7 @@ model* quantum_link_model_2d_square(int lx, int ly, double lambda) {
     }
     for(int i=0;i<4*mhnspin;i++) {
         m->link[3*4*mhnspin+i] = link_rule_spatial_2_2[i];
+        //m->link[3*4*mhnspin+i] = link_rule_spatial_1_1_1_1[i];
     }
     for(int i=0;i<4*mhnspin;i++) {
         m->link[4*4*mhnspin+i] = link_rule_spatial_4_frozen[i];

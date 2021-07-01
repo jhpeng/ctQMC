@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,6 +19,21 @@ model* malloc_model(int nsite, int nbond, int mhnspin) {
     m->nbond = nbond;
     m->mhnspin = mhnspin;
     m->sweight = 0;
+
+    if(1) {
+        printf("-------------------------------------------\n");
+        printf("#\tmemory allocate : model\n");
+        printf("# nsite : %d | nbond : %d | mhnspin : %d\n",nsite,nbond,mhnspin);
+        printf("# bond2type   : %zu bytes\n",sizeof(int)*nbond);
+        printf("# bond2hNspin : %zu bytes\n",sizeof(int)*nbond);
+        printf("# bond2weight : %zu bytes\n",sizeof(double)*nbond);
+        printf("# bond2index  : %zu bytes\n",sizeof(int)*nbond*mhnspin);
+        printf("# link        : %zu bytes\n",sizeof(int)*mhnspin*4*20);
+        printf("# insert      : %zu bytes\n",sizeof(insert_rule)*20);
+        printf("# cmf         : %zu bytes\n",sizeof(double)*nbond);
+        printf("-------------------------------------------\n");
+
+    }
 
     return m;
 }
@@ -149,6 +165,24 @@ world_line_omp* malloc_world_line_omp(int cap, int mnspin, int nsite, int nthrea
     w->csize = cap*mnspin*nthread;
     w->mnspin = mnspin;
     w->nsite = nsite;
+
+    if(1) {
+        printf("-------------------------------------------\n");
+        printf("#\tmemory allocate : world_line_omp\n");
+        printf("# nsite : %d | mcap : %d | mnspin : %d | nthread %d\n",nsite,cap,mnspin,nthread);
+        printf("# sequenceA   : %zu bytes\n",sizeof(vertex)*nthread*cap);
+        printf("# sequenceB   : %zu bytes\n",sizeof(vertex)*nthread*cap);
+        printf("# cluster     : %zu bytes\n",sizeof(int)*cap*mnspin*nthread);
+        printf("# weight      : %zu bytes\n",sizeof(int)*cap*mnspin*nthread);
+        printf("# istate      : %zu bytes\n",sizeof(int)*nsite*nthread);
+        printf("# pstate      : %zu bytes\n",sizeof(int)*nsite*nthread);
+        printf("# first       : %zu bytes\n",sizeof(int)*nsite*nthread);
+        printf("# last        : %zu bytes\n",sizeof(int)*nsite*nthread);
+        printf("# insert_seq  : %zu bytes\n",sizeof(double)*nthread*cap);
+        printf("# insert_bond : %zu bytes\n",sizeof(int)*nthread*cap);
+        printf("-------------------------------------------\n");
+
+    }
 
     return w;
 }
