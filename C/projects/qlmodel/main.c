@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <gsl/gsl_rng.h>
 #include <omp.h>
 
@@ -28,6 +29,8 @@ unsigned long int Seed;
 block* Nog0_block;
 block* Nog1_block;
 block* Nog2_block;
+block* Order1_block;
+block* Order2_block;
 
 block* block_alloc(int cap) {
     block* data = (block*)malloc(sizeof(block));
@@ -422,41 +425,97 @@ void count_graph_number(world_line_omp* w, model* m, int* nog) {
     }
 }
 
-void measurement(world_line_omp* w, model* m) {
-    int winding_x = 0;
-    int winding_y = 0;
-    int nog[3];
+int* order1_structure_factor = NULL;
+int* order2_structure_factor = NULL;
+void measure_order(world_line_omp* w, double* obs) {
+    if(order1_structure_factor==NULL) {
+        order1_structure_factor = (int*)malloc(sizeof(int)*Lx*Ly*2);
+        order2_structure_factor = (int*)malloc(sizeof(int)*Lx*Ly*2);
 
-    for(int i=0;i<Lx*Ly;i++) {
-        winding_x += w->istate[i];
-        winding_y += w->istate[i+Lx*Ly];
+        for(int y=0;y<Ly;y++) {
+            for(int x=0;x<Lx;x++) {
+                order1_structure_factor[x+y*Lx]         = 1-(y%2)*2;
+                order1_structure_factor[x+y*Lx + Lx*Ly] = 0;
+            }
+        }
+
+        for(int y=0;y<Ly;y++) {
+            for(int x=0;x<Lx;x++) {
+                order2_structure_factor[x+y*Lx]         = 1-(x+y)%2*2;
+                order2_structure_factor[x+y*Lx + Lx*Ly] = (x+y)%2*2-1;
+            }
+        }
     }
 
-    winding_x = winding_x/Lx;
-    winding_y = winding_y/Ly;
-    printf("winding number x : %d\n",winding_x);
-    printf("winding number y : %d\n",winding_y);
+    int nthread = w->nthread;
+    int order1_temp[nthread];
+    int order2_temp[nthread];
 
-    int n_ref_conf = count_reference_conf(w);
-    printf("nref : %d \n",n_ref_conf);
+    omp_set_num_threads(nthread);
+    #pragma omp parallel
+    {
+        int i_thread = omp_get_thread_num();
+        
+        int start = 2*Lx*Ly*i_thread/nthread;
+        int end   = 2*Lx*Ly*(i_thread+1)/nthread;
 
-    double energy=0;
-    for(int j=0;j<w->nthread;j++)
-        energy+=w->len[j];
-    energy = -(energy-Lx*Ly)/Beta;
+        order1_temp[i_thread] = 0;
+        order2_temp[i_thread] = 0;
 
-    printf("energy : %e \n",energy);
+        for(int i=start;i<end;i++) {
+            order1_temp[i_thread] += w->istate[i]*order1_structure_factor[i];
+            order2_temp[i_thread] += w->istate[i]*order2_structure_factor[i];
+        }
+    }
 
+    obs[0] = 0;
+    obs[1] = 0;
+    for(int i_thread=0;i_thread<nthread;i_thread++) {
+        obs[0] += (double)order1_temp[i_thread];
+        obs[1] += (double)order2_temp[i_thread];
+    }
+    obs[0] = fabs(obs[0])/(Lx*Ly);
+    obs[1] = fabs(obs[1])/(2*Lx*Ly);
+}
+
+void measurement(world_line_omp* w, model* m) {
+    if(0) {
+        int winding_x = 0;
+        int winding_y = 0;
+
+        for(int i=0;i<Lx*Ly;i++) {
+            winding_x += w->istate[i];
+            winding_y += w->istate[i+Lx*Ly];
+        }
+
+        winding_x = winding_x/Lx;
+        winding_y = winding_y/Ly;
+        printf("winding number x : %d\n",winding_x);
+        printf("winding number y : %d\n",winding_y);
+
+        int n_ref_conf = count_reference_conf(w);
+        printf("nref : %d \n",n_ref_conf);
+
+        double energy=0;
+        for(int j=0;j<w->nthread;j++)
+            energy+=w->len[j];
+        energy = -(energy-Lx*Ly)/Beta;
+
+        printf("energy : %e \n",energy);
+    }
+
+    int nog[3];
     count_graph_number(w,m,nog);
-    append(Nog0_block,((double)nog[0]/Beta));
-    append(Nog1_block,((double)nog[1]/Beta));
-    append(Nog2_block,((double)nog[2]/Beta));
+    append(Nog0_block,((double)nog[0])/Beta);
+    append(Nog1_block,((double)nog[1])/Beta);
+    append(Nog2_block,((double)nog[2])/Beta);
 
-    printf("nog0/beta : %e \n",mean(Nog0_block));
-    printf("nog1/beta : %e \n",mean(Nog1_block));
-    printf("nog2/beta : %e \n",mean(Nog2_block));
+    double obs_order[2];
+    measure_order(w,obs_order);
+    append(Order1_block,obs_order[0]);
+    append(Order2_block,obs_order[1]);
 
-    count_local_graph_number(w,m);
+
 }
 
 void save_data() {
@@ -468,23 +527,25 @@ void save_data() {
     fprintf(data_file,"%.16e ",mean(Nog0_block));
     fprintf(data_file,"%.16e ",mean(Nog1_block));
     fprintf(data_file,"%.16e ",mean(Nog2_block));
+    fprintf(data_file,"%.16e ",mean(Order1_block));
+    fprintf(data_file,"%.16e ",mean(Order2_block));
     fprintf(data_file,"\n");
 
     fclose(data_file);
 }
 
 int main(int argc, char** argv) {
-    Lx = 32;
-    Ly = 32;
-    Lambda = 0.36;
-    Beta = 64.0;
-    Distance = 30;
+    Lx = 128;
+    Ly = 128;
+    Lambda = 1.0;
+    Beta = 128.0;
+    Distance = 0;
     Seed = 47583;
 
     int nthread = 6;
-    int thermal = 10000;
+    int thermal = 100000;
     int nsample = 1000;
-    int nblock  = 200;
+    int nblock  = 1000;
 
     // Setting up the random number generator
     gsl_rng* rng[nthread];
@@ -512,9 +573,12 @@ int main(int argc, char** argv) {
     Nog0_block = block_alloc(nsample);
     Nog1_block = block_alloc(nsample);
     Nog2_block = block_alloc(nsample);
+    Order1_block = block_alloc(nsample);
+    Order2_block = block_alloc(nsample);
 
     // Thermalization
-    double times[50];
+    int ntimes = 100;
+    double* times = (double*)malloc(sizeof(double)*ntimes);
     for(int i=0;i<thermal;i++) {
         double start = omp_get_wtime();
         remove_vertices_omp(w);
@@ -528,21 +592,27 @@ int main(int argc, char** argv) {
         double t4 = omp_get_wtime();
         flip_cluster_omp(w,rng);
         double end = omp_get_wtime();
-        check_world_line_omp_configuration(w,m);
+        //check_world_line_omp_configuration(w,m);
+
+        measurement(w,m);
+
+        times[i%ntimes] = end-start;
+
+        //if((i+1)%ntimes==0) {
+        if(1) {
 
         int noo=0;
         for(int j=0;j<nthread;j++)
             noo+=w->len[j];
 
-        times[i%50] = end-start;
 
         printf("-----------------------------------------\n");
         printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
-        printf("thremal:%d | Noo:%d | nthread=%d ",i,noo,nthread);
+        printf("thremal:%d | Noo:%d | nthread=%d ",i+1,noo,nthread);
         if(i>50) {
             double mtime=0;
-            for(int j=0;j<50;j++) mtime+=times[j];
-            mtime = mtime/50;
+            for(int j=0;j<ntimes;j++) mtime+=times[j];
+            mtime = mtime/ntimes;
             printf("| time:%f \n",mtime);
         } else {
             printf("\n");
@@ -552,9 +622,12 @@ int main(int argc, char** argv) {
         printf("clustering_inner_omp    : %f  \n",(t3-t2)/(end-start));
         printf("clustering_crossing_omp : %f  \n",(t4-t3)/(end-start));
         printf("flip_cluster_omp        : %f  \n",(end-t4)/(end-start));
+        printf("order1 : %e \n",mean(Order1_block));
+        printf("order2 : %e \n",mean(Order2_block));
 
-        //measurement(w,m);
         //print_charge(w);
+        }
+
     }
 
     for(int i_block=0;i_block<nblock;i_block++) {
@@ -566,19 +639,41 @@ int main(int argc, char** argv) {
             clustering_crossing_omp(w);
             flip_cluster_omp(w,rng);
 
-            int noo=0;
-            for(int j=0;j<nthread;j++)
-                noo+=w->len[j];
-
-            printf("-----------------------------------------\n");
-            printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
-            printf("nsweep:%d | Noo:%d | nthread=%d \n",i,noo,nthread);
-
             measurement(w,m);
+            count_local_graph_number(w,m);
             //print_charge(w);
         }
-        save_data();
+
+        int noo=0;
+        for(int j=0;j<nthread;j++)
+            noo+=w->len[j];
+
+        printf("-----------------------------------------\n");
+        printf("Lx = %d | Ly = %d | lambda=%.4f | beta=%.1f \n",Lx,Ly,Lambda,Beta);
+        printf("nblock:%d | Noo:%d | nthread=%d \n",i_block+1,noo,nthread);
+
+        printf("nog0/beta : %e \n",mean(Nog0_block));
+        printf("nog1/beta : %e \n",mean(Nog1_block));
+        printf("nog2/beta : %e \n",mean(Nog2_block));
+        printf("order1 : %e \n",mean(Order1_block));
+        printf("order2 : %e \n",mean(Order2_block));
+
+        //save_data();
     }
 
-    save_local_energy(w);
+    //save_local_energy(w);
+
+    //free data
+    for(int i_thread=0;i_thread<nthread;i_thread++)
+        gsl_rng_free(rng[i_thread]);
+    free(times);
+    free_model(m);
+    free_world_line_omp(w);
+
+    block_free(Nog0_block);
+    block_free(Nog1_block);
+    block_free(Nog2_block);
+    block_free(Order1_block);
+    block_free(Order2_block);
+
 }
