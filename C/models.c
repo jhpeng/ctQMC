@@ -725,3 +725,200 @@ model* quantum_link_model_2d_square(int lx, int ly, double lambda) {
     return m;
 }
 
+model* quantum_link_model_3d_cubic(int lx, int ly, int lz, double lambda) {
+    int nsite = 3*lx*ly*lz;
+    int nbond = 9*lx*ly*lz;
+    int mhnspin = 4;
+    model* m = malloc_model(nsite,nbond,mhnspin);
+
+    int n=0;
+    int V = lx*ly*lz;
+    int A = lx*ly;
+    int u1,u2,u3,u4;
+    for(int z=0;z<lz;z++) {
+        for(int y=0;y<ly;y++) {
+            for(int x=0;x<lx;x++) {
+                //index : 1
+                u1 = x+y*lx+z*A + 0*V;
+                u2 = (x+1)%lx+y*lx+z*A + 1*V;
+                u3 = x+((y+1)%ly)*lx+z*A + 0*V;
+                u4 = x+y*lx+z*A + 1*V;
+
+                m->bond2type[n]   = 0;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = 1.0;
+                m->sweight += 1.0;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+
+
+                //index : 2
+                u1 = x+y*lx+z*A + 0*V;
+                u2 = (x+1)%lx+y*lx+z*A + 2*V;
+                u3 = x+y*lx+((z+1)%lz)*A + 0*V;
+                u4 = x+y*lx+z*A + 2*V;
+
+                m->bond2type[n]   = 0;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = 1.0;
+                m->sweight += 1.0;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+
+
+                //index : 3
+                u1 = x+y*lx+z*A + 1*V;
+                u2 = x+((y+1)%ly)*lx+z*A + 2*V;
+                u3 = x+y*lx+((z+1)%lz)*A + 1*V;
+                u4 = x+y*lx+z*A + 2*V;
+
+                m->bond2type[n]   = 0;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = 1.0;
+                m->sweight += 1.0;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+            }
+        }
+    }
+    for(int z=0;z<lz;z++) {
+        for(int y=0;y<ly;y++) {
+            for(int x=0;x<lx;x++) {
+                //index : 1
+                u1 = x+y*lx+z*A + 0*V;
+                u2 = (x+1)%lx+y*lx+z*A + 1*V;
+                u3 = x+((y+1)%ly)*lx+z*A + 0*V;
+                u4 = x+y*lx+z*A + 1*V;
+
+                m->bond2type[n]   = 1;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = lambda;
+                m->sweight += lambda;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+
+
+                //index : 2
+                u1 = x+y*lx+z*A + 0*V;
+                u2 = (x+1)%lx+y*lx+z*A + 2*V;
+                u3 = x+y*lx+((z+1)%lz)*A + 0*V;
+                u4 = x+y*lx+z*A + 2*V;
+
+                m->bond2type[n]   = 1;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = lambda;
+                m->sweight += lambda;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+
+
+                //index : 3
+                u1 = x+y*lx+z*A + 1*V;
+                u2 = x+((y+1)%ly)*lx+z*A + 2*V;
+                u3 = x+y*lx+((z+1)%lz)*A + 1*V;
+                u4 = x+y*lx+z*A + 2*V;
+
+                m->bond2type[n]   = 1;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = lambda;
+                m->sweight += lambda;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+            }
+        }
+    }
+    for(int z=0;z<lz;z++) {
+        for(int y=0;y<ly;y++) {
+            for(int x=0;x<lx;x++) {
+                //index : 1
+                u1 = x+y*lx+z*A + 0*V;
+                u2 = (x+1)%lx+y*lx+z*A + 1*V;
+                u3 = x+((y+1)%ly)*lx+z*A + 0*V;
+                u4 = x+y*lx+z*A + 1*V;
+
+                m->bond2type[n]   = 2;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = 1.0;
+                m->sweight += 1.0;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+
+
+                //index : 2
+                u1 = x+y*lx+z*A + 0*V;
+                u2 = (x+1)%lx+y*lx+z*A + 2*V;
+                u3 = x+y*lx+((z+1)%lz)*A + 0*V;
+                u4 = x+y*lx+z*A + 2*V;
+
+                m->bond2type[n]   = 2;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = 1.0;
+                m->sweight += 1.0;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+
+
+                //index : 3
+                u1 = x+y*lx+z*A + 1*V;
+                u2 = x+((y+1)%ly)*lx+z*A + 2*V;
+                u3 = x+y*lx+((z+1)%lz)*A + 1*V;
+                u4 = x+y*lx+z*A + 2*V;
+
+                m->bond2type[n]   = 2;
+                m->bond2hNspin[n] = 4;
+                m->bond2weight[n] = 1.0;
+                m->sweight += 1.0;
+                m->bond2index[n*mhnspin+0] = u1;
+                m->bond2index[n*mhnspin+1] = u2;
+                m->bond2index[n*mhnspin+2] = u3;
+                m->bond2index[n*mhnspin+3] = u4;
+                n++;
+            }
+        }
+    }
+
+    for(int i=0;i<4*mhnspin;i++) {
+        m->link[0*4*mhnspin+i] = link_rule_single_box_vertex_1[i];
+    }
+    for(int i=0;i<4*mhnspin;i++) {
+        m->link[1*4*mhnspin+i] = link_rule_single_box_vertex_2[i];
+    }
+    for(int i=0;i<4*mhnspin;i++) {
+        m->link[2*4*mhnspin+i] = link_rule_single_box_non_vertex[i];
+    }
+
+    m->insert[0] = insert_rule_single_box_vertex_1;
+    m->insert[1] = insert_rule_single_box_vertex_2;
+    m->insert[2] = insert_rule_single_box_non_vertex;
+
+    m->nsite = nsite;
+    m->nbond = nbond;
+    m->mhnspin = mhnspin;
+    create_cmf(m->cmf,m->bond2weight,nbond);
+
+    return m;
+}
