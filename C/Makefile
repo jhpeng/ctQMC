@@ -5,7 +5,7 @@
 CC	= gcc
 
 # define any compile-time flags
-CFLAGS = -Wall -g -fPIC -O3 -std=c99
+CFLAGS = -Wall -g -fPIC -O0 -std=c99
 
 # define openmp flags
 OPENMP  = -fopenmp
@@ -32,7 +32,7 @@ MAIN	= exe
 
 # define the main srouce file
 #MAINSRC = projects/parallel/jq3_ladder_square/main.c
-MAINSRC = projects/qlmodel/main.c
+MAINSRC = projects/qlmodel_3d/main.c
 
 all: $(MAIN)
 
