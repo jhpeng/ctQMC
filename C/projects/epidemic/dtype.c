@@ -76,6 +76,22 @@ world_line* malloc_world_line(int length, int mnspin, int nsite) {
     w->flag = 0;
     w->nsite = nsite;
 
+    if(1) {
+        printf("-------------------------------------------\n");
+        printf("#\tmemory allocate : world_line\n");
+        printf("# nsite : %d | length : %d | mnspin : %d\n",nsite,length,mnspin);
+        printf("# sequenceA   : %zu bytes\n",sizeof(vertex)*length);
+        printf("# sequenceB   : %zu bytes\n",sizeof(vertex)*length);
+        printf("# cluster     : %zu bytes\n",sizeof(int)*length*mnspin);
+        printf("# weight      : %zu bytes\n",sizeof(int)*length*mnspin);
+        printf("# istate      : %zu bytes\n",sizeof(int)*nsite);
+        printf("# pstate      : %zu bytes\n",sizeof(int)*nsite);
+        printf("# first       : %zu bytes\n",sizeof(int)*nsite);
+        printf("# last        : %zu bytes\n",sizeof(int)*nsite);
+        printf("-------------------------------------------\n");
+
+    }
+
     return w;
 }
 
@@ -114,6 +130,21 @@ void realloc_world_line(world_line* w, int length) {
         w->weight  = (int*)malloc(sizeof(int)*length*(w->mnspin));
 
         w->length = length;
+
+        if(1) {
+            int nsite = w->nsite;
+            int mnspin = w->mnspin;
+            printf("-------------------------------------------\n");
+            printf("#\tmemory reallocate : world_line\n");
+            printf("# nsite : %d | length : %d | mnspin : %d\n",nsite,length,mnspin);
+            printf("# sequenceA   : %zu bytes\n",sizeof(vertex)*length);
+            printf("# sequenceB   : %zu bytes\n",sizeof(vertex)*length);
+            printf("# cluster     : %zu bytes\n",sizeof(int)*length*mnspin);
+            printf("# weight      : %zu bytes\n",sizeof(int)*length*mnspin);
+            printf("-------------------------------------------\n");
+
+        }
+
     }
 }
 
