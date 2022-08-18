@@ -50,7 +50,7 @@ int insert_rule_recover_1(int* state) {
 */
 
 int link_rule_recover_2[] = {0,1,1,1,1,-3,-1,-1};
-int insert_rule_recover_3(int* state) {
+int insert_rule_recover_2(int* state) {
     if(state[0]==-1 && state[1]==-1) {
         return 1;
     }
@@ -202,7 +202,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
     int mhnspin = 2;
     model* m = malloc_model(nsite,nbond,mhnspin);
 
-    int n=0
+    int n=0;
     for(int i_edge=0;i_edge<nedge;i_edge++) {
         int i = edges[2*i_edge+0];
         int j = edges[2*i_edge+1];
