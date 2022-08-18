@@ -295,9 +295,9 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
                 } else {
                     w->weight[idr] = -1;
                 }
+            } else if(w->weight[idr]==0) {
+                state[j] = -state[j];
             }
-
-            state[j] = state[j]*((w->weight[idr])*2+1);
         }
     }
 
