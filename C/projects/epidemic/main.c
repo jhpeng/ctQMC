@@ -61,7 +61,11 @@ int* read_edgelist(char* filename, int* nnode, int* nedge) {
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
     double alpha=0.7;
+    double T = 10.0;
     unsigned long int seed=39479832;
+
+    int thermal = 1000;
+    //int nsweep  = 1000;
 
     int nnode;
     int nedge;
@@ -72,7 +76,26 @@ int main() {
     gsl_rng_set(rng,seed);
 
     model* m = sis_model_uniform_infection(alpha,nnode,nedge,edges);
+    world_line* w = malloc_world_line(1024,2*(m->mhnspin),m->nsite);
+    w->beta = T;
+
+    for(int i=0;i<(w->nsite);i++) {
+        w->istate[i] = 1;
+        if(gsl_rng_uniform_pos(rng)<0.5) {
+            w->istate[i] = -1;
+        }
+    }
+
+    for(int i=0;i<thermal;i++) {
+        remove_vertices(w);
+        insert_vertices(w,m,rng);
+        clustering(w,m);
+        flip_cluster(w,rng);
+    }
 
 
+    free_world_line(w);
     free_model(m);
+    gsl_rng_free(rng);
+    free(edges);
 }
