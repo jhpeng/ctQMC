@@ -183,6 +183,20 @@ int insert_rule_susceptible_frozen(int* state) {
     return 0;
 }
 
+/* graph name : all_type_frozen
+**      1
+**      |
+**      | 
+**      |
+**      0 
+**
+** apply on the boundary
+*/
+
+int link_rule_all_type_frozen[] = {0,0,-2,-1};
+int insert_rule_all_type_frozen(int* state) {
+    return 1;
+}
 
 
 
@@ -200,7 +214,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
     int nsite = nnode;
     int nbond = 3*nedge+3*nnode;
     int mhnspin = 2;
-    model* m = malloc_model(nsite,nbond,mhnspin);
+    model* m = malloc_model(nsite,nbond+nnode,mhnspin);
 
     int n=0;
     for(int i_edge=0;i_edge<nedge;i_edge++) {
@@ -270,6 +284,20 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
         n++;
     }
 
+    /* type : 6
+    ** apply only one the boundary
+    */
+    for(int i=0;i<nnode;i++) {
+
+        m->bond2type[n]   = 6;
+        m->bond2hNspin[n] = 1;
+        m->bond2weight[n] = 0.0;
+        m->sweight += 0.0;
+        m->bond2index[n*mhnspin+0] = i;
+        m->bond2index[n*mhnspin+1] = -1;
+        n++;
+    }
+
     for(int i=0;i<8;i++) {
         m->link[0*4*mhnspin+i] = link_rule_same_state[i];
         m->link[1*4*mhnspin+i] = link_rule_infect_1[i];
@@ -279,6 +307,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
         m->link[3*4*mhnspin+i] = link_rule_single_site_recover_1[i];
         m->link[4*4*mhnspin+i] = link_rule_single_site_recover_2[i];
         m->link[5*4*mhnspin+i] = link_rule_susceptible_frozen[i];
+        m->link[6*4*mhnspin+i] = link_rule_all_type_frozen[i];
     }
 
     m->insert[0] = insert_rule_same_state;
@@ -287,6 +316,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
     m->insert[3] = insert_rule_single_site_recover_1;
     m->insert[4] = insert_rule_single_site_recover_2;
     m->insert[5] = insert_rule_susceptible_frozen;
+    m->insert[6] = insert_rule_all_type_frozen;
 
     m->nsite = nsite;
     m->nbond = nbond;

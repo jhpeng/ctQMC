@@ -58,13 +58,44 @@ int* read_edgelist(char* filename, int* nnode, int* nedge) {
     return edges;
 }
 
+void boundary_condition_frozen_initial_state(world_line* w, model* m) {
+    int nnode = m->nsite;
+    int nbond = m->nbond;
+    int length = nnode+(w->nvertices);
+    realloc_world_line(w,length);
+
+    vertex* sequence1 = w->sequenceB;
+    vertex* sequence2 = w->sequenceA;
+    if(w->flag) {
+        sequence1 = w->sequenceA;
+        sequence2 = w->sequenceB;
+    }
+
+    int n=0;
+    for(int i=0;i<nnode;i++) {
+        (sequence2[n]).tau      = 0.0;
+        (sequence2[n]).bond     = nbond+i;
+        (sequence2[n]).hNspin   = 1;
+        (sequence2[n]).state[0] = w->istate[i];
+        (sequence2[n]).state[1] = w->istate[i];
+        n++;
+    }
+    for(int i=0;i<(w->nvertices);i++) {
+        copy_vertex(&(sequence2[n]),&(sequence1[i]));
+        n++;
+    }
+
+    w->nvertices = n;
+    w->flag = !(w->flag);
+}
+
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
     double alpha=0.7;
     double T = 10.0;
     unsigned long int seed=39479832;
 
-    int thermal = 1000;
+    int thermal = 100000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -80,15 +111,16 @@ int main() {
     w->beta = T;
 
     for(int i=0;i<(w->nsite);i++) {
-        w->istate[i] = 1;
-        if(gsl_rng_uniform_pos(rng)<0.5) {
-            w->istate[i] = -1;
+        w->istate[i] = -1;
+        if(gsl_rng_uniform_pos(rng)<0.05) {
+            w->istate[i] = 1;
         }
     }
 
     for(int i=0;i<thermal;i++) {
         remove_vertices(w);
         insert_vertices(w,m,rng);
+        boundary_condition_frozen_initial_state(w,m);
         clustering(w,m);
         flip_cluster(w,rng);
     }
