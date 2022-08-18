@@ -109,6 +109,9 @@ void free_world_line(world_line* w) {
 
 void realloc_world_line(world_line* w, int length) {
     if(length > (w->length)) {
+        //buffer
+        length = (int)(length*1.2);
+
         vertex* sequence;
         sequence = (vertex*)malloc(sizeof(vertex)*length);
         for(int i=0;i<w->nvertices;i++) 
