@@ -89,13 +89,51 @@ void boundary_condition_frozen_initial_state(world_line* w, model* m) {
     w->flag = !(w->flag);
 }
 
+static void print_state(int* state, int nnode) {
+    for(int i=0;i<nnode;i++) {
+        printf("%d ",(state[i]+1)/2);
+    }
+    printf("\n");
+}
+
+void show_configuration(world_line* w, model* m, double* time_list, int ntime) {
+    int* pstate = w->pstate;
+    int nnode = w->nsite;
+    int mhnspin = m->mhnspin;
+
+    for(int i=0;i<nnode;i++) pstate[i] = w->istate[i];
+
+    vertex* sequence = w->sequenceB;
+    if(w->flag) 
+        sequence = w->sequenceA;
+
+    int i=0;
+    int index, i_node;
+    vertex* v;
+    for(int n=0;n<(w->nvertices) && i<ntime;n++) {
+        v = &(sequence[n]);
+        if(time_list[i]<(v->tau)) {
+            print_state(pstate,nnode);
+            i++;
+        }
+
+        for(i_node=0;i_node<(v->hNspin);i_node++) {
+            index = m->bond2index[(v->bond)*mhnspin+i_node];
+            pstate[index] = v->state[(v->hNspin)+i_node];
+        }
+    }
+    for(;i<ntime;i++) {
+        print_state(pstate,nnode);
+    }
+}
+
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=0.7;
+    double alpha=1.0;
     double T = 10.0;
     unsigned long int seed=39479832;
 
-    int thermal = 100000;
+    int thermal = 1000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -110,6 +148,7 @@ int main() {
     world_line* w = malloc_world_line(1024,2*(m->mhnspin),m->nsite);
     w->beta = T;
 
+    // initial state
     for(int i=0;i<(w->nsite);i++) {
         w->istate[i] = -1;
         if(gsl_rng_uniform_pos(rng)<0.05) {
@@ -117,6 +156,7 @@ int main() {
         }
     }
 
+    // thermalization
     for(int i=0;i<thermal;i++) {
         remove_vertices(w);
         insert_vertices(w,m,rng);
@@ -125,7 +165,17 @@ int main() {
         flip_cluster(w,rng);
     }
 
+    // measurement
+    double dt = 0.1;
+    int ntime = (int)(T/dt+1);
+    double* time_list = (double*)malloc(sizeof(double)*ntime);
+    for(int i=0;i<ntime;i++) {
+        time_list[i] = (dt*i)/T;
+    }
+    show_configuration(w,m,time_list,ntime);
 
+    // free memory
+    free(time_list);
     free_world_line(w);
     free_model(m);
     gsl_rng_free(rng);
