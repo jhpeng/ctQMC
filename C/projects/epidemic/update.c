@@ -167,6 +167,18 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
                 pstate[index] = v->state[v->hNspin+i_site];
             }
 
+            // sweep between type 3 and type 4
+            int type = m->bond2type[v->bond];
+            if(type==3 || type==4) {
+                if(gsl_rng_uniform_pos(rng)<0.5) {
+                    if(type==3) {
+                        v->bond += nsite;
+                    } else if(type==4) {
+                        v->bond -= nsite;
+                    }
+                }
+            }
+
             copy_vertex(&(sequence2[n]),v);
             n++;
             k++;
