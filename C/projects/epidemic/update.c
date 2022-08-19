@@ -124,7 +124,7 @@ void remove_vertices(world_line* w) {
     w->flag = !(w->flag);
 }
 
-void swaping_graphs(world_line* w, model* m, gsl_rng* rng) {
+void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
     int nnode = m->nsite;
     int nedge = (m->nbond-3*nnode)/6;
     vertex* v;

@@ -6,6 +6,8 @@
 
 void remove_vertices(world_line* w);
 
+void swapping_graphs(world_line* w, model* m, gsl_rng* rng);
+
 void insert_vertices(world_line* w, model* m, gsl_rng* rng);
 
 void clustering(world_line* w, model* m);
