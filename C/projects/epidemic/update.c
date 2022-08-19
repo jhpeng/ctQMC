@@ -124,6 +124,44 @@ void remove_vertices(world_line* w) {
     w->flag = !(w->flag);
 }
 
+void swaping_graphs(world_line* w, model* m, gsl_rng* rng) {
+    int nnode = m->nsite;
+    int nedge = (m->nbond-3*nnode)/6;
+    vertex* v;
+
+    vertex* sequence = w->sequenceB;
+    if(w->flag) 
+        sequence = w->sequenceA;
+
+    for(int i=0;i<(w->nvertices);i++) {
+        v = &(sequence[i]);
+
+        // swap between type 1&3 or 2&4
+        int type = m->bond2type[v->bond];
+        if(type==1 || type==2) {
+            if(gsl_rng_uniform_pos(rng)<0.5) {
+                v->bond += 2*nedge;
+            }
+        } else if(type==3 || type==4) {
+            if(gsl_rng_uniform_pos(rng)<0.5) {
+                v->bond -= 2*nedge;
+            }
+        }
+
+        // swap between type 6&7
+        else if(type==6) {
+            if(gsl_rng_uniform_pos(rng)<0.5) {
+                v->bond += nnode;
+            }
+        } else if(type==7) {
+            if(gsl_rng_uniform_pos(rng)<0.5) {
+                v->bond -= nnode;
+            }
+        }
+    }
+
+}
+
 void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
     double lam = (m->sweight)*(w->beta);
 
@@ -165,18 +203,6 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
             for(i_site=0;i_site<(v->hNspin);i_site++) {
                 index = m->bond2index[v->bond*mhnspin+i_site];
                 pstate[index] = v->state[v->hNspin+i_site];
-            }
-
-            // sweep between type 3 and type 4
-            int type = m->bond2type[v->bond];
-            if(type==3 || type==4) {
-                if(gsl_rng_uniform_pos(rng)<0.5) {
-                    if(type==3) {
-                        v->bond += nsite;
-                    } else if(type==4) {
-                        v->bond -= nsite;
-                    }
-                }
             }
 
             copy_vertex(&(sequence2[n]),v);
