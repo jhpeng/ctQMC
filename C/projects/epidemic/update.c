@@ -327,7 +327,6 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
         for(j=0;j<2*hNspin;j++) {
             idv = i*mnspin+j;
             idr = root(w->cluster,idv);
-            //printf("%d ",w->weight[idr]);
             if(w->weight[idr]>0) {
                 if(gsl_rng_uniform_pos(rng)<0.5) {
                     w->weight[idr] =  0;
@@ -340,7 +339,6 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             }
         }
     }
-    //printf("\n");
 
     for(i=0;i<nsite;i++) {
         id = w->first[i];

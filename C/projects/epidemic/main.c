@@ -130,10 +130,10 @@ void show_configuration(world_line* w, model* m, double* time_list, int ntime) {
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
     double alpha=1.0;
-    double T = 10.0;
+    double T = 20.0;
     unsigned long int seed=39479832;
 
-    int thermal = 1000;
+    int thermal = 10000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -143,6 +143,7 @@ int main() {
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
     gsl_rng_set(rng,seed);
+
 
     model* m = sis_model_uniform_infection(alpha,nnode,nedge,edges);
     world_line* w = malloc_world_line(1024,2*(m->mhnspin),m->nsite);
@@ -159,6 +160,7 @@ int main() {
     // thermalization
     for(int i=0;i<thermal;i++) {
         remove_vertices(w);
+        swapping_graphs(w,m,rng);
         insert_vertices(w,m,rng);
         boundary_condition_frozen_initial_state(w,m);
         clustering(w,m);
@@ -166,7 +168,7 @@ int main() {
     }
 
     // measurement
-    double dt = 0.1;
+    double dt = 0.2;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
