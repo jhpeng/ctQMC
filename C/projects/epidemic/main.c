@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
 #include <gsl/gsl_rng.h>
 
 #include "dtype.h"
@@ -127,13 +130,79 @@ void show_configuration(world_line* w, model* m, double* time_list, int ntime) {
     }
 }
 
+time_t start_time,end_time;
+unsigned long int measurement_count=0;
+double* infected_ratio=NULL;
+void measurement(world_line* w, model* m, double* time_list, int ntime, int block_size) {
+    if(infected_ratio==NULL) {
+        infected_ratio = (double*)malloc(sizeof(double)*ntime);
+        start_time = clock();
+    }
+    int* pstate = w->pstate;
+    int nnode = w->nsite;
+    int mhnspin = m->mhnspin;
+
+    for(int i=0;i<nnode;i++) pstate[i] = w->istate[i];
+
+    vertex* sequence = w->sequenceB;
+    if(w->flag) 
+        sequence = w->sequenceA;
+
+    int i=0;
+    int index, i_node;
+    vertex* v;
+    for(int n=0;n<(w->nvertices) && i<ntime;n++) {
+        v = &(sequence[n]);
+        if(time_list[i]<(v->tau)) {
+            double ir=0;
+            for(int i_node=0;i_node<nnode;i_node++) {
+                ir+=0.5*(pstate[i_node]+1);
+            }
+            ir = ir/nnode;
+            infected_ratio[i] += ir;
+            i++;
+        }
+
+        for(i_node=0;i_node<(v->hNspin);i_node++) {
+            index = m->bond2index[(v->bond)*mhnspin+i_node];
+            pstate[index] = v->state[(v->hNspin)+i_node];
+        }
+    }
+    for(;i<ntime;i++) {
+        double ir=0;
+        for(int i_node=0;i_node<nnode;i_node++) {
+            ir+=0.5*(pstate[i_node]+1);
+        }
+        ir = ir/nnode;
+        infected_ratio[i] += ir;
+    }
+    measurement_count++;
+
+    if(measurement_count==block_size) {
+        end_time = clock();
+        printf("------------------------------\n");
+        printf(" t    |    I/N\n");
+        for(i=0;i<ntime;i++) {
+            infected_ratio[i] = infected_ratio[i]/block_size;
+            printf("%.4lf  %.12lf\n",time_list[i]*w->beta,infected_ratio[i]);
+
+            infected_ratio[i] = 0;
+        }
+        measurement_count=0;
+
+        printf("time for this block = %.2lf(sec)\n",(double)(end_time-start_time)/CLOCKS_PER_SEC);
+        start_time = clock();
+    }
+}
+
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
     double alpha=1.0;
-    double T = 20.0;
-    unsigned long int seed=39479832;
+    double T = 40.0;
+    unsigned long int seed=79636232;
 
-    int thermal = 10000;
+    int block_size=1000;
+    int thermal = 1000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -152,7 +221,8 @@ int main() {
     // initial state
     for(int i=0;i<(w->nsite);i++) {
         w->istate[i] = -1;
-        if(gsl_rng_uniform_pos(rng)<0.05) {
+        //if(gsl_rng_uniform_pos(rng)<0.05) {
+        if(i<10) {
             w->istate[i] = 1;
         }
     }
@@ -168,15 +238,28 @@ int main() {
     }
 
     // measurement
-    double dt = 0.2;
+    double dt = 2.0;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
         time_list[i] = (dt*i)/T;
     }
-    show_configuration(w,m,time_list,ntime);
+
+    for(;;) {
+        for(int i=0;i<10;i++) {
+            remove_vertices(w);
+            swapping_graphs(w,m,rng);
+            insert_vertices(w,m,rng);
+            boundary_condition_frozen_initial_state(w,m);
+            clustering(w,m);
+            flip_cluster(w,rng);
+        }
+
+        measurement(w,m,time_list,ntime,block_size);
+    }
 
     // free memory
+    free(infected_ratio);
     free(time_list);
     free_world_line(w);
     free_model(m);
