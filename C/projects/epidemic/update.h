@@ -4,6 +4,12 @@
 
 #include "dtype.h"
 
+void print_ninfection();
+
+void print_nrecover();
+
+void print_ncluster_flippable();
+
 void remove_vertices(world_line* w);
 
 void swapping_graphs(world_line* w, model* m, gsl_rng* rng);

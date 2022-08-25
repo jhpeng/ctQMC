@@ -191,17 +191,21 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         measurement_count=0;
 
         printf("time for this block = %.2lf(sec)\n",(double)(end_time-start_time)/CLOCKS_PER_SEC);
+        print_ninfection();
+        print_nrecover();
+        print_ncluster_flippable();
+
         start_time = clock();
     }
 }
 
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=1.0;
-    double T = 40.0;
-    unsigned long int seed=79636232;
+    double alpha=0.5;
+    double T = 10.0;
+    unsigned long int seed=132;
 
-    int block_size=1000;
+    int block_size=10000;
     int thermal = 1000;
     //int nsweep  = 1000;
 
@@ -222,7 +226,7 @@ int main() {
     for(int i=0;i<(w->nsite);i++) {
         w->istate[i] = -1;
         //if(gsl_rng_uniform_pos(rng)<0.05) {
-        if(i<10) {
+        if(i<100) {
             w->istate[i] = 1;
         }
     }
@@ -238,7 +242,7 @@ int main() {
     }
 
     // measurement
-    double dt = 2.0;
+    double dt = 0.5;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
@@ -246,7 +250,7 @@ int main() {
     }
 
     for(;;) {
-        for(int i=0;i<10;i++) {
+        for(int i=0;i<100;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
