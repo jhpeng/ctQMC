@@ -200,7 +200,7 @@ world_line_omp* malloc_world_line_omp(int cap, int mnspin, int nsite, int nthrea
     w->mnspin = mnspin;
     w->nsite = nsite;
 
-    if(1) {
+    if(0) {
         printf("-------------------------------------------\n");
         printf("#\tmemory allocate : world_line_omp\n");
         printf("# nsite : %d | mcap : %d | mnspin : %d | nthread %d\n",nsite,cap,mnspin,nthread);
