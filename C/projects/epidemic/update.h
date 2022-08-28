@@ -4,6 +4,12 @@
 
 #include "dtype.h"
 
+double ninfection_ave_value();
+
+double nrecover_ave_value();
+
+double ncluster_flippable_ave_value();
+
 void print_ninfection();
 
 void print_nrecover();

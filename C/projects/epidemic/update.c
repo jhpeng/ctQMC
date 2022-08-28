@@ -98,6 +98,14 @@ static int nrecover_count=0;
 static double ninfection_ave=0;
 static double nrecover_ave=0;
 
+double ninfection_ave_value() {
+    return ninfection_ave/ninfection_count;
+}
+
+double nrecover_ave_value() {
+    return nrecover_ave/nrecover_count;
+}
+
 void print_ninfection() {
     ninfection_ave = ninfection_ave/ninfection_count;
     printf("# of infection = %.12e\n",ninfection_ave);
@@ -345,6 +353,10 @@ void clustering(world_line* w, model* m) {
 
 static int ncluster_flippable_count=0;
 static double ncluster_flippable_ave=0;
+double ncluster_flippable_ave_value() {
+    return ncluster_flippable_ave/ncluster_flippable_count;
+}
+
 void print_ncluster_flippable() {
     ncluster_flippable_ave = ncluster_flippable_ave/ncluster_flippable_count;
     printf("# of flippable cluster = %.12e \n",ncluster_flippable_ave);
