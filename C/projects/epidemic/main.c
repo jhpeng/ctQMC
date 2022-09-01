@@ -92,6 +92,30 @@ void boundary_condition_frozen_initial_state(world_line* w, model* m) {
     w->flag = !(w->flag);
 }
 
+void boundary_condition_frozen_final_state(world_line* w, model* m) {
+    int nnode = m->nsite;
+    int nbond = m->nbond;
+    int length = nnode+(w->nvertices);
+    realloc_world_line(w,length);
+
+    vertex* sequence = w->sequenceB;
+    if(w->flag) {
+        sequence = w->sequenceA;
+    }
+
+    int n=w->nvertices;
+    for(int i=0;i<nnode;i++) {
+        (sequence[n]).tau      = w->beta;
+        (sequence[n]).bond     = nbond+i;
+        (sequence[n]).hNspin   = 1;
+        (sequence[n]).state[0] = w->istate[i];
+        (sequence[n]).state[1] = w->istate[i];
+        n++;
+    }
+
+    w->nvertices = n;
+}
+
 static void print_state(int* state, int nnode) {
     for(int i=0;i<nnode;i++) {
         printf("%d ",(state[i]+1)/2);
@@ -258,13 +282,13 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=1.0;
-    double T = 10.0;
+    double alpha=0.6;
+    double T = 20.0;
     unsigned long int seed=7934011;
 
-    int nif=10;
+    int nif=50;
     int block_size=1000;
-    int thermal = 10000;
+    int thermal = 100000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -296,7 +320,8 @@ int main() {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_frozen_initial_state(w,m);
+            //boundary_condition_frozen_initial_state(w,m);
+            boundary_condition_frozen_final_state(w,m);
             clustering(w,m);
             flip_cluster(w,rng);
         }
@@ -305,7 +330,7 @@ int main() {
     printf("end of thermalization!\n");
 
     // measurement
-    double dt = 0.25;
+    double dt = 0.1;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
@@ -317,7 +342,8 @@ int main() {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_frozen_initial_state(w,m);
+            //boundary_condition_frozen_initial_state(w,m);
+            boundary_condition_frozen_final_state(w,m);
             clustering(w,m);
             flip_cluster(w,rng);
         }
