@@ -419,5 +419,24 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
     m->mhnspin = mhnspin;
     create_cmf(m->cmf,m->bond2weight,nbond);
 
+/*
+    for(int i=0;i<nedge;i++) {
+        int k[12];
+        k[0] = m->bond2index[(i+0*nedge)*mhnspin+0];
+        k[1] = m->bond2index[(i+0*nedge)*mhnspin+1];
+        k[2] = m->bond2index[(i+1*nedge)*mhnspin+0];
+        k[3] = m->bond2index[(i+1*nedge)*mhnspin+1];
+        k[4] = m->bond2index[(i+2*nedge)*mhnspin+0];
+        k[5] = m->bond2index[(i+2*nedge)*mhnspin+1];
+        k[6] = m->bond2index[(i+3*nedge)*mhnspin+0];
+        k[7] = m->bond2index[(i+3*nedge)*mhnspin+1];
+        k[8] = m->bond2index[(i+4*nedge)*mhnspin+0];
+        k[9] = m->bond2index[(i+4*nedge)*mhnspin+1];
+        k[10] = m->bond2index[(i+5*nedge)*mhnspin+0];
+        k[11] = m->bond2index[(i+5*nedge)*mhnspin+1];
+        printf("(%d,%d) (%d,%d) (%d,%d) (%d,%d) (%d,%d) (%d,%d)\n",k[0],k[1],k[2],k[3],k[4],k[5],k[6],k[7],k[8],k[9],k[10],k[11]);
+    }
+*/
+
     return m;
 }
