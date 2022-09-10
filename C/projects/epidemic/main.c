@@ -92,7 +92,7 @@ void boundary_condition_frozen_initial_state(world_line* w, model* m) {
     w->flag = !(w->flag);
 }
 
-void boundary_condition_frozen_final_state(world_line* w, model* m) {
+void boundary_condition_frozen_final_state(world_line* w, model* m, double p, int type, gsl_rng* rng) {
     int nnode = m->nsite;
     int nbond = m->nbond;
     int length = nnode+(w->nvertices);
@@ -103,14 +103,35 @@ void boundary_condition_frozen_final_state(world_line* w, model* m) {
         sequence = w->sequenceA;
     }
 
+    int* pstate = w->pstate;
     int n=w->nvertices;
-    for(int i=0;i<nnode;i++) {
-        (sequence[n]).tau      = w->beta;
-        (sequence[n]).bond     = nbond+i;
-        (sequence[n]).hNspin   = 1;
-        (sequence[n]).state[0] = w->istate[i];
-        (sequence[n]).state[1] = w->istate[i];
-        n++;
+
+    if(type==0) {
+        for(int i=0;i<nnode;i++) {
+            (sequence[n]).tau      = w->beta;
+            (sequence[n]).bond     = nbond+i;
+            (sequence[n]).hNspin   = 1;
+            (sequence[n]).state[0] = w->istate[i];
+            (sequence[n]).state[1] = w->istate[i];
+            n++;
+        }
+    } else if(type==1) {
+        int inf=0;
+        for(int i=0;i<nnode;i++) inf += (pstate[i]+1)/2;
+
+        double pdis = 1.0;
+        if(inf!=0) pdis=(p*nnode)/inf;
+        
+        for(int i=0;i<nnode;i++) {
+            if(pstate[i]==1 && (gsl_rng_uniform_pos(rng)<pdis)) {
+                (sequence[n]).tau      = w->beta;
+                (sequence[n]).bond     = nbond+i;
+                (sequence[n]).hNspin   = 1;
+                (sequence[n]).state[0] = w->istate[i];
+                (sequence[n]).state[1] = w->istate[i];
+                n++;
+            }
+        }
     }
 
     w->nvertices = n;
@@ -282,9 +303,9 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=0.6;
+    double alpha=0.2;
     double T = 20.0;
-    unsigned long int seed=7934011;
+    unsigned long int seed=389473;
 
     int nif=50;
     int block_size=1000;
@@ -294,6 +315,7 @@ int main() {
     int nnode;
     int nedge;
     int* edges = read_edgelist(filename,&nnode,&nedge);
+    double pnif = ((double)nif)/nnode;
 
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
@@ -321,7 +343,7 @@ int main() {
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
             //boundary_condition_frozen_initial_state(w,m);
-            boundary_condition_frozen_final_state(w,m);
+            boundary_condition_frozen_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
@@ -343,7 +365,7 @@ int main() {
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
             //boundary_condition_frozen_initial_state(w,m);
-            boundary_condition_frozen_final_state(w,m);
+            boundary_condition_frozen_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
