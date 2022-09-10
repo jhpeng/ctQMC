@@ -165,6 +165,21 @@ int insert_rule_infect_4(int* state) {
     return 0;
 }
 
+/* graph name : infect_switching
+**     2    3
+**     x    x
+**       
+**     |....|
+**     0    1
+**
+** 
+*/
+
+int link_rule_infect_switching[] = {0,0,1,1,2,1,-1,-1};
+int insert_rule_infect_switching(int* state) {
+    return 0;
+}
+
 /* graph name : single_sie_recover_1
 **      1
 **      o
@@ -266,7 +281,7 @@ static void create_cmf(double* cmf, double* weight, int length) {
 
 model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edges) {
     int nsite = nnode;
-    int nbond = 6*nedge+3*nnode;
+    int nbond = 7*nedge+3*nnode;
     int mhnspin = 2;
     model* m = malloc_model(nsite,nbond+nnode,mhnspin);
 
@@ -277,8 +292,8 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 0;
         m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = 0.5*alpha;
-        m->sweight += 0.5*alpha;
+        m->bond2weight[n] = 2*alpha/3.0;
+        m->sweight += 2*alpha/3.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = j;
         n++;
@@ -289,8 +304,8 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 1;
         m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = 0.5*alpha;
-        m->sweight += 0.5*alpha;
+        m->bond2weight[n] = alpha/3.0;
+        m->sweight += alpha/3.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = j;
         n++;
@@ -301,8 +316,8 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 2;
         m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = 0.5*alpha;
-        m->sweight += 0.5*alpha;
+        m->bond2weight[n] = alpha/3.0;
+        m->sweight += alpha/3.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = j;
         n++;
@@ -313,8 +328,8 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 3;
         m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = 0.5*alpha;
-        m->sweight += 0.5*alpha;
+        m->bond2weight[n] = alpha/3.0;
+        m->sweight += alpha/3.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = j;
         n++;
@@ -325,8 +340,8 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 4;
         m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = 0.5*alpha;
-        m->sweight += 0.5*alpha;
+        m->bond2weight[n] = alpha/3.0;
+        m->sweight += alpha/3.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = j;
         n++;
@@ -337,20 +352,22 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 5;
         m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha;
-        m->sweight += alpha;
+        m->bond2weight[n] = 2*alpha/3.0;
+        m->sweight += 2*alpha/3.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = j;
         n++;
     }
-    for(int i=0;i<nnode;i++) {
+    for(int i_edge=0;i_edge<nedge;i_edge++) {
+        int i = edges[2*i_edge+0];
+        int j = edges[2*i_edge+1];
 
         m->bond2type[n]   = 6;
-        m->bond2hNspin[n] = 1;
-        m->bond2weight[n] = 0.5;
-        m->sweight += 0.5;
+        m->bond2hNspin[n] = 2;
+        m->bond2weight[n] = 0;
+        m->sweight += 0;
         m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = -1;
+        m->bond2index[n*mhnspin+1] = j;
         n++;
     }
     for(int i=0;i<nnode;i++) {
@@ -367,6 +384,16 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 8;
         m->bond2hNspin[n] = 1;
+        m->bond2weight[n] = 0.5;
+        m->sweight += 0.5;
+        m->bond2index[n*mhnspin+0] = i;
+        m->bond2index[n*mhnspin+1] = -1;
+        n++;
+    }
+    for(int i=0;i<nnode;i++) {
+
+        m->bond2type[n]   = 9;
+        m->bond2hNspin[n] = 1;
         m->bond2weight[n] = 1.0;
         m->sweight += 1.0;
         m->bond2index[n*mhnspin+0] = i;
@@ -374,12 +401,12 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
         n++;
     }
 
-    /* type : 9
+    /* type : 10
     ** apply only one the boundary
     */
     for(int i=0;i<nnode;i++) {
 
-        m->bond2type[n]   = 9;
+        m->bond2type[n]   = 10;
         m->bond2hNspin[n] = 1;
         m->bond2weight[n] = 0.0;
         m->sweight += 0.0;
@@ -395,12 +422,13 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
         m->link[3*4*mhnspin+i] = link_rule_infect_3[i];
         m->link[4*4*mhnspin+i] = link_rule_infect_4[i];
         m->link[5*4*mhnspin+i] = link_rule_susceptible_frozen_2[i];
+        m->link[6*4*mhnspin+i] = link_rule_infect_switching[i];
     }
     for(int i=0;i<4;i++) {
-        m->link[6*4*mhnspin+i] = link_rule_single_site_recover_1[i];
-        m->link[7*4*mhnspin+i] = link_rule_single_site_recover_2[i];
-        m->link[8*4*mhnspin+i] = link_rule_susceptible_frozen[i];
-        m->link[9*4*mhnspin+i] = link_rule_all_type_frozen[i];
+        m->link[7*4*mhnspin+i] = link_rule_single_site_recover_1[i];
+        m->link[8*4*mhnspin+i] = link_rule_single_site_recover_2[i];
+        m->link[9*4*mhnspin+i] = link_rule_susceptible_frozen[i];
+        m->link[10*4*mhnspin+i] = link_rule_all_type_frozen[i];
     }
 
     m->insert[0] = insert_rule_same_state;
@@ -409,10 +437,11 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
     m->insert[3] = insert_rule_infect_3;
     m->insert[4] = insert_rule_infect_4;
     m->insert[5] = insert_rule_susceptible_frozen_2;
-    m->insert[6] = insert_rule_single_site_recover_1;
-    m->insert[7] = insert_rule_single_site_recover_2;
-    m->insert[8] = insert_rule_susceptible_frozen;
-    m->insert[9] = insert_rule_all_type_frozen;
+    m->insert[6] = insert_rule_infect_switching;
+    m->insert[7] = insert_rule_single_site_recover_1;
+    m->insert[8] = insert_rule_single_site_recover_2;
+    m->insert[9] = insert_rule_susceptible_frozen;
+    m->insert[10] = insert_rule_all_type_frozen;
 
     m->nsite = nsite;
     m->nbond = nbond;

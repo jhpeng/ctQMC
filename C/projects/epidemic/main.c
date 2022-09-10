@@ -282,13 +282,13 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=0.6;
-    double T = 20.0;
-    unsigned long int seed=7934011;
+    double alpha=1.0;
+    double T = 10.0;
+    unsigned long int seed=49873411;
 
-    int nif=50;
+    int nif=10;
     int block_size=1000;
-    int thermal = 100000;
+    int thermal = 10000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -320,8 +320,8 @@ int main() {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            //boundary_condition_frozen_initial_state(w,m);
-            boundary_condition_frozen_final_state(w,m);
+            boundary_condition_frozen_initial_state(w,m);
+            //boundary_condition_frozen_final_state(w,m);
             clustering(w,m);
             flip_cluster(w,rng);
         }
@@ -330,7 +330,7 @@ int main() {
     printf("end of thermalization!\n");
 
     // measurement
-    double dt = 0.1;
+    double dt = 0.25;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
@@ -338,12 +338,12 @@ int main() {
     }
 
     for(;;) {
-        for(int i=0;i<200;i++) {
+        for(int i=0;i<100;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            //boundary_condition_frozen_initial_state(w,m);
-            boundary_condition_frozen_final_state(w,m);
+            boundary_condition_frozen_initial_state(w,m);
+            //boundary_condition_frozen_final_state(w,m);
             clustering(w,m);
             flip_cluster(w,rng);
         }

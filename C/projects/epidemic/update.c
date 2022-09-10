@@ -167,7 +167,7 @@ void remove_vertices(world_line* w) {
 
 void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
     int nnode = m->nsite;
-    int nedge = (m->nbond-3*nnode)/6;
+    int nedge = (m->nbond-3*nnode)/7;
     vertex* v;
 
     vertex* sequence = w->sequenceB;
@@ -177,30 +177,41 @@ void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
     for(int i=0;i<(w->nvertices);i++) {
         v = &(sequence[i]);
 
-        // swap between type 1&3 or 2&4
+        // swap between type (1,3,6) or (2,4,6)
+        int* state = v->state;
         int type = m->bond2type[v->bond];
-        if(type==1 || type==2) {
-            if(gsl_rng_uniform_pos(rng)<0.5) {
-                v->bond += 2*nedge;
+        if((type==1 || type==3) || (type==6 && state[0]==1)) {
+            int i_edge = (v->bond)%nedge;
+            double dis = gsl_rng_uniform_pos(rng)*3;
+            if(dis<1) {
+                v->bond = 1*nedge+i_edge;
+            } else if(dis<2) {
+                v->bond = 3*nedge+i_edge;
+            } else {
+                v->bond = 6*nedge+i_edge;
             }
-        } else if(type==3 || type==4) {
-            if(gsl_rng_uniform_pos(rng)<0.5) {
-                v->bond -= 2*nedge;
+        } else if((type==2 || type==4) || type==6) {
+            int i_edge = (v->bond)%nedge;
+            double dis = gsl_rng_uniform_pos(rng)*3;
+            if(dis<1) {
+                v->bond = 2*nedge+i_edge;
+            } else if(dis<2) {
+                v->bond = 4*nedge+i_edge;
+            } else {
+                v->bond = 6*nedge+i_edge;
             }
         }
 
-        // swap between type 6&7
-        else if(type==6) {
+        // swap between type 7&8
+        else if(type==7 || type==8) {
+            int i_node = (v->bond-7*nedge)%nnode;
             if(gsl_rng_uniform_pos(rng)<0.5) {
-                v->bond += nnode;
-            }
-        } else if(type==7) {
-            if(gsl_rng_uniform_pos(rng)<0.5) {
-                v->bond -= nnode;
+                v->bond = 7*nedge+i_node;
+            } else {
+                v->bond = 7*nedge+nnode+i_node;
             }
         }
     }
-
 }
 
 void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
