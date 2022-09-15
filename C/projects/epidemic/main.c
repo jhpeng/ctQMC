@@ -61,7 +61,19 @@ int* read_edgelist(char* filename, int* nnode, int* nedge) {
     return edges;
 }
 
-void boundary_condition_frozen_initial_state(world_line* w, model* m) {
+int ninfected_initial_state(world_line* w) {
+    int nnode=w->nsite;
+    int ninfected=0;
+
+    for(int i=0;i<nnode;i++) {
+        ninfected+=w->istate[i];
+    }
+
+    return (ninfected+nnode)/2;
+}
+
+int* boundary_condition_frozen_list=NULL;
+void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng* rng) {
     int nnode = m->nsite;
     int nbond = m->nbond;
     int length = nnode+(w->nvertices);
@@ -74,15 +86,56 @@ void boundary_condition_frozen_initial_state(world_line* w, model* m) {
         sequence2 = w->sequenceB;
     }
 
-    int n=0;
-    for(int i=0;i<nnode;i++) {
-        (sequence2[n]).tau      = 0.0;
-        (sequence2[n]).bond     = nbond+i;
-        (sequence2[n]).hNspin   = 1;
-        (sequence2[n]).state[0] = w->istate[i];
-        (sequence2[n]).state[1] = w->istate[i];
-        n++;
+    if(boundary_condition_frozen_list==NULL) {
+        boundary_condition_frozen_list = (int*)malloc(sizeof(int)*nnode);
     }
+
+    int n=0;
+    if(type==0) {
+        for(int i=0;i<nnode;i++) {
+            (sequence2[n]).tau      = 0.0;
+            (sequence2[n]).bond     = nbond+i;
+            (sequence2[n]).hNspin   = 1;
+            (sequence2[n]).state[0] = w->istate[i];
+            (sequence2[n]).state[1] = w->istate[i];
+            n++;
+        }
+    } else if(type==1) {
+        int ninfected=0;
+        for(int i=0;i<nnode;i++) {
+            if(w->istate[i]==-1) {
+                boundary_condition_frozen_list[i]=1;
+            } else {
+                boundary_condition_frozen_list[i]=0;
+                ninfected++;
+            }
+        }
+        if(ninfected==1) {
+            int check=1;
+            while(check) {
+                int j = gsl_rng_uniform_pos(rng)*nnode;
+                if(boundary_condition_frozen_list[j]) {
+                    boundary_condition_frozen_list[j]=0;
+                    check=0;
+                }
+            }
+        } else if(ninfected==0) {
+            for(int i=0;i<nnode;i++) 
+                boundary_condition_frozen_list[i]=0;
+        }
+        for(int i=0;i<nnode;i++) {
+            if(boundary_condition_frozen_list[i]) {
+                (sequence2[n]).tau      = 0.0;
+                (sequence2[n]).bond     = nbond+i;
+                (sequence2[n]).hNspin   = 1;
+                (sequence2[n]).state[0] = w->istate[i];
+                (sequence2[n]).state[1] = w->istate[i];
+                n++;
+            }
+        }
+    }
+
+
     for(int i=0;i<(w->nvertices);i++) {
         copy_vertex(&(sequence2[n]),&(sequence1[i]));
         n++;
@@ -342,7 +395,7 @@ int main() {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            //boundary_condition_frozen_initial_state(w,m);
+            boundary_condition_initial_state(w,m,1,rng);
             boundary_condition_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
@@ -360,17 +413,18 @@ int main() {
     }
 
     for(;;) {
-        for(int i=0;i<200;i++) {
+        for(int i=0;i<10;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            //boundary_condition_frozen_initial_state(w,m);
+            boundary_condition_initial_state(w,m,1,rng);
             boundary_condition_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
 
-        measurement(w,m,time_list,ntime,block_size);
+        if(ninfected_initial_state(w)==1)
+            measurement(w,m,time_list,ntime,block_size);
     }
 
     // free memory
