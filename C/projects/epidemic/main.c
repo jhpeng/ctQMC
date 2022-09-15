@@ -92,7 +92,7 @@ void boundary_condition_frozen_initial_state(world_line* w, model* m) {
     w->flag = !(w->flag);
 }
 
-void boundary_condition_frozen_final_state(world_line* w, model* m, double p, int type, gsl_rng* rng) {
+void boundary_condition_final_state(world_line* w, model* m, double p, int type, gsl_rng* rng) {
     int nnode = m->nsite;
     int nbond = m->nbond;
     int length = nnode+(w->nvertices);
@@ -343,7 +343,7 @@ int main() {
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
             //boundary_condition_frozen_initial_state(w,m);
-            boundary_condition_frozen_final_state(w,m,pnif,1,rng);
+            boundary_condition_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
@@ -365,7 +365,7 @@ int main() {
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
             //boundary_condition_frozen_initial_state(w,m);
-            boundary_condition_frozen_final_state(w,m,pnif,1,rng);
+            boundary_condition_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
