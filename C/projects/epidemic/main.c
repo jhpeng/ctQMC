@@ -269,8 +269,11 @@ void save_configuration(FILE* file, world_line* w, model* m, double* time_list, 
 time_t start_time,end_time;
 unsigned long int measurement_count=0;
 double* infected_ratio=NULL;
+double* infected_time=NULL;
+double total_infected_time=0;
 void measurement(world_line* w, model* m, double* time_list, int ntime, int block_size) {
     if(infected_ratio==NULL) {
+        infected_time = (double*)malloc(sizeof(double)*(w->nsite));
         infected_ratio = (double*)malloc(sizeof(double)*ntime);
         start_time = clock();
     }
@@ -278,7 +281,10 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     int nnode = w->nsite;
     int mhnspin = m->mhnspin;
 
-    for(int i=0;i<nnode;i++) pstate[i] = w->istate[i];
+    for(int i=0;i<nnode;i++) {
+        pstate[i] = w->istate[i];
+        infected_time[i] = 0;
+    }
 
     vertex* sequence = w->sequenceB;
     if(w->flag) 
@@ -301,9 +307,20 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
         for(i_node=0;i_node<(v->hNspin);i_node++) {
             index = m->bond2index[(v->bond)*mhnspin+i_node];
+            if(pstate[index]==1) {
+                total_infected_time += ((v->tau)-infected_time[index]);
+            }
             pstate[index] = v->state[(v->hNspin)+i_node];
+            if(pstate[index]==1) {
+                infected_time[index] = v->tau;
+            }
         }
     }
+    for(i_node=0;i_node<nnode;i_node++) {
+        if(pstate[i_node]==1)
+            total_infected_time += (1.0-infected_time[i_node]);
+    }
+
     for(;i<ntime;i++) {
         double ir=0;
         for(int i_node=0;i_node<nnode;i_node++) {
@@ -335,14 +352,17 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
         double ninfection = ninfection_ave_value();
         double nrecover  = nrecover_ave_value();
-        fprintf(file_g,"%.12e %.12e\n",ninfection,nrecover);
+        total_infected_time = total_infected_time/block_size*(w->beta);
+        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection,nrecover,total_infected_time);
 
+        print_ncluster_flippable();
         print_ninfection();
         print_nrecover();
-        print_ncluster_flippable();
+        printf("total infected time = %.12e\n",total_infected_time);
 
         save_configuration(file_conf,w,m,time_list,ntime);
 
+        total_infected_time=0;
         fclose(file_conf);
         fclose(file_t);
         fclose(file_s);
@@ -356,13 +376,13 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
 int main() {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=0.2;
+    double alpha=0.7;
     double T = 20.0;
     unsigned long int seed=389473;
 
     int nif=50;
     int block_size=1000;
-    int thermal = 100000;
+    int thermal = 10000;
     //int nsweep  = 1000;
 
     int nnode;
@@ -388,9 +408,10 @@ int main() {
     }
 
     // thermalization
-    for(double temp_t=1.0;temp_t<T+1.0;temp_t++) {
-        printf("thermalization : temp_t=%.1f\n",temp_t);
+    for(double temp_t=1.0;temp_t<T+10.0;temp_t++) {
         w->beta=temp_t;
+        if(temp_t>T) w->beta=T;
+        printf("thermalization : temp_t=%.1f\n",w->beta);
         for(int i=0;i<thermal;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
