@@ -3,6 +3,6 @@
 
 #include "dtype.h"
 
-model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edges);
+model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int nedge, int* edges);
 
 #endif

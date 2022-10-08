@@ -185,7 +185,19 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
                 n++;
             }
         }
+    } else if(type==2) {
+        for(int i=0;i<nnode;i++) {
+            if(pstate[i]==0) {
+                (sequence[n]).tau      = w->beta;
+                (sequence[n]).bond     = nbond+i;
+                (sequence[n]).hNspin   = 1;
+                (sequence[n]).state[0] = w->istate[i];
+                (sequence[n]).state[1] = w->istate[i];
+                n++;
+            }
+        }
     }
+
 
     w->nvertices = n;
 }
@@ -374,16 +386,18 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
     char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
-    double alpha=0.7;
-    double T = 20.0;
-    unsigned long int seed=389473;
+    double alpha=atof(argv[1]);
+    double gamma=atof(argv[2]);
+    double T = atof(argv[3]);
 
-    int nif=50;
-    int block_size=1000;
-    int thermal = 10000;
-    //int nsweep  = 1000;
+    int nif=atoi(argv[4]);
+    int block_size=atoi(argv[5]);
+    int thermal = atoi(argv[6]);
+    int nblock = atoi(argv[7]);
+    int nsweep  = nblock*block_size;
+    unsigned long int seed=atoi(argv[8]);
 
     int nnode;
     int nedge;
@@ -395,7 +409,7 @@ int main() {
     gsl_rng_set(rng,seed);
 
 
-    model* m = sis_model_uniform_infection(alpha,nnode,nedge,edges);
+    model* m = sis_model_uniform_infection(alpha,gamma,nnode,nedge,edges);
     world_line* w = malloc_world_line(1024,2*(m->mhnspin),m->nsite);
 
     // initial state
@@ -433,7 +447,7 @@ int main() {
         time_list[i] = (dt*i)/T;
     }
 
-    for(;;) {
+    for(int i_sweep=0;i_sweep<nsweep;i_sweep++) {
         for(int i=0;i<10;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);

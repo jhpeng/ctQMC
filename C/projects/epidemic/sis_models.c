@@ -264,7 +264,7 @@ static void create_cmf(double* cmf, double* weight, int length) {
     }
 }
 
-model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edges) {
+model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int nedge, int* edges) {
     int nsite = nnode;
     int nbond = 6*nedge+3*nnode;
     int mhnspin = 2;
@@ -347,7 +347,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 6;
         m->bond2hNspin[n] = 1;
-        m->bond2weight[n] = 0.5;
+        m->bond2weight[n] = 0.5*gamma;
         m->sweight += 0.5;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = -1;
@@ -357,7 +357,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 7;
         m->bond2hNspin[n] = 1;
-        m->bond2weight[n] = 0.5;
+        m->bond2weight[n] = 0.5*gamma;
         m->sweight += 0.5;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = -1;
@@ -367,7 +367,7 @@ model* sis_model_uniform_infection(double alpha, int nnode, int nedge, int* edge
 
         m->bond2type[n]   = 8;
         m->bond2hNspin[n] = 1;
-        m->bond2weight[n] = 1.0;
+        m->bond2weight[n] = 1.0*gamma;
         m->sweight += 1.0;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = -1;
