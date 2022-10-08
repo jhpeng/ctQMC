@@ -394,8 +394,8 @@ int main(int argc, char** argv) {
 
     int nif=atoi(argv[4]);
     int block_size=atoi(argv[5]);
-    int thermal = atoi(argv[6]);
-    int nblock = atoi(argv[7]);
+    int nblock = atoi(argv[6]);
+    int thermal = atoi(argv[7]);
     int nsweep  = nblock*block_size;
     unsigned long int seed=atoi(argv[8]);
 
