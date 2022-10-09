@@ -387,7 +387,7 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 }
 
 int main(int argc, char** argv) {
-    char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
+    char filename[128] = "/hpc/home/jp549/src/ctQMC/C/projects/epidemic/network/test.edgelist";
     double alpha=atof(argv[1]);
     double gamma=atof(argv[2]);
     double T = atof(argv[3]);
