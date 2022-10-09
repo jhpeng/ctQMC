@@ -187,7 +187,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
         }
     } else if(type==2) {
         for(int i=0;i<nnode;i++) {
-            if(pstate[i]==0) {
+            if(pstate[i]==-1) {
                 (sequence[n]).tau      = w->beta;
                 (sequence[n]).bond     = nbond+i;
                 (sequence[n]).hNspin   = 1;
@@ -430,8 +430,8 @@ int main(int argc, char** argv) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,1,rng);
-            boundary_condition_final_state(w,m,pnif,1,rng);
+            boundary_condition_initial_state(w,m,0,rng);
+            boundary_condition_final_state(w,m,pnif,2,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
@@ -452,8 +452,8 @@ int main(int argc, char** argv) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,1,rng);
-            boundary_condition_final_state(w,m,pnif,1,rng);
+            boundary_condition_initial_state(w,m,0,rng);
+            boundary_condition_final_state(w,m,pnif,2,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
