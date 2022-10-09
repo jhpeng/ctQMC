@@ -447,7 +447,7 @@ int main(int argc, char** argv) {
         time_list[i] = (dt*i)/T;
     }
 
-    for(int i_sweep=0;i_sweep<nsweep;i_sweep++) {
+    for(int i_sweep=0;i_sweep<nsweep;) {
         for(int i=0;i<10;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
@@ -458,8 +458,10 @@ int main(int argc, char** argv) {
             flip_cluster(w,rng);
         }
 
-        if(ninfected_initial_state(w)==1)
+        if(ninfected_initial_state(w)==1) {
             measurement(w,m,time_list,ntime,block_size);
+            i_sweep++;
+        }
     }
 
     // free memory
