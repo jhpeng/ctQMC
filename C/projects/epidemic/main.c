@@ -164,8 +164,8 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
             (sequence[n]).tau      = 1.0;
             (sequence[n]).bond     = nbond+i;
             (sequence[n]).hNspin   = 1;
-            (sequence[n]).state[0] = w->istate[i];
-            (sequence[n]).state[1] = w->istate[i];
+            (sequence[n]).state[0] = pstate[i];
+            (sequence[n]).state[1] = pstate[i];
             n++;
         }
     } else if(type==1) {
@@ -180,8 +180,8 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
                 (sequence[n]).tau      = 1.0;
                 (sequence[n]).bond     = nbond+i;
                 (sequence[n]).hNspin   = 1;
-                (sequence[n]).state[0] = w->istate[i];
-                (sequence[n]).state[1] = w->istate[i];
+                (sequence[n]).state[0] = pstate[i];
+                (sequence[n]).state[1] = pstate[i];
                 n++;
             }
         }
@@ -191,8 +191,8 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
                 (sequence[n]).tau      = 1.0;
                 (sequence[n]).bond     = nbond+i;
                 (sequence[n]).hNspin   = 1;
-                (sequence[n]).state[0] = w->istate[i];
-                (sequence[n]).state[1] = w->istate[i];
+                (sequence[n]).state[0] = pstate[i];
+                (sequence[n]).state[1] = pstate[i];
                 n++;
             }
         }
@@ -305,6 +305,7 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     int i=0;
     int index, i_node;
     vertex* v;
+    double tau_p=0;
     for(int n=0;n<(w->nvertices) && i<ntime;n++) {
         v = &(sequence[n]);
         if(time_list[i]<(v->tau)) {
@@ -327,6 +328,10 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
                 infected_time[index] = v->tau;
             }
         }
+        if(tau_p>(v->tau)) printf("tau_p > tau!\n");
+        else if((v->tau)<0) printf("tau < 0!\n");
+        else if((v->tau)>1) printf("tau > 1!\n");
+        tau_p = v->tau;
     }
     for(i_node=0;i_node<nnode;i_node++) {
         if(pstate[i_node]==1)
