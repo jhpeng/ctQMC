@@ -348,7 +348,7 @@ model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int ne
         m->bond2type[n]   = 6;
         m->bond2hNspin[n] = 1;
         m->bond2weight[n] = 0.5*gamma;
-        m->sweight += 0.5;
+        m->sweight += 0.5*gamma;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = -1;
         n++;
@@ -358,7 +358,7 @@ model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int ne
         m->bond2type[n]   = 7;
         m->bond2hNspin[n] = 1;
         m->bond2weight[n] = 0.5*gamma;
-        m->sweight += 0.5;
+        m->sweight += 0.5*gamma;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = -1;
         n++;
@@ -368,7 +368,7 @@ model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int ne
         m->bond2type[n]   = 8;
         m->bond2hNspin[n] = 1;
         m->bond2weight[n] = 1.0*gamma;
-        m->sweight += 1.0;
+        m->sweight += 1.0*gamma;
         m->bond2index[n*mhnspin+0] = i;
         m->bond2index[n*mhnspin+1] = -1;
         n++;

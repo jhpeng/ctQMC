@@ -161,11 +161,11 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
 
     if(type==0) {
         for(int i=0;i<nnode;i++) {
-            (sequence[n]).tau      = w->beta;
+            (sequence[n]).tau      = 1.0;
             (sequence[n]).bond     = nbond+i;
             (sequence[n]).hNspin   = 1;
-            (sequence[n]).state[0] = w->istate[i];
-            (sequence[n]).state[1] = w->istate[i];
+            (sequence[n]).state[0] = pstate[i];
+            (sequence[n]).state[1] = pstate[i];
             n++;
         }
     } else if(type==1) {
@@ -177,22 +177,22 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
         
         for(int i=0;i<nnode;i++) {
             if(pstate[i]==1 && (gsl_rng_uniform_pos(rng)<pdis)) {
-                (sequence[n]).tau      = w->beta;
+                (sequence[n]).tau      = 1.0;
                 (sequence[n]).bond     = nbond+i;
                 (sequence[n]).hNspin   = 1;
-                (sequence[n]).state[0] = w->istate[i];
-                (sequence[n]).state[1] = w->istate[i];
+                (sequence[n]).state[0] = pstate[i];
+                (sequence[n]).state[1] = pstate[i];
                 n++;
             }
         }
     } else if(type==2) {
         for(int i=0;i<nnode;i++) {
-            if(pstate[i]==0) {
-                (sequence[n]).tau      = w->beta;
+            if(pstate[i]==-1) {
+                (sequence[n]).tau      = 1.0;
                 (sequence[n]).bond     = nbond+i;
                 (sequence[n]).hNspin   = 1;
-                (sequence[n]).state[0] = w->istate[i];
-                (sequence[n]).state[1] = w->istate[i];
+                (sequence[n]).state[0] = pstate[i];
+                (sequence[n]).state[1] = pstate[i];
                 n++;
             }
         }
@@ -305,6 +305,7 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     int i=0;
     int index, i_node;
     vertex* v;
+    double tau_p=0;
     for(int n=0;n<(w->nvertices) && i<ntime;n++) {
         v = &(sequence[n]);
         if(time_list[i]<(v->tau)) {
@@ -327,6 +328,10 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
                 infected_time[index] = v->tau;
             }
         }
+        if(tau_p>(v->tau)) printf("tau_p > tau!\n");
+        else if((v->tau)<0) printf("tau < 0!\n");
+        else if((v->tau)>1) printf("tau > 1!\n");
+        tau_p = v->tau;
     }
     for(i_node=0;i_node<nnode;i_node++) {
         if(pstate[i_node]==1)
@@ -422,21 +427,19 @@ int main(int argc, char** argv) {
     }
 
     // thermalization
-    for(double temp_t=1.0;temp_t<T+10.0;temp_t++) {
-        w->beta=temp_t;
-        if(temp_t>T) w->beta=T;
-        printf("thermalization : temp_t=%.1f\n",w->beta);
-        for(int i=0;i<thermal;i++) {
-            remove_vertices(w);
-            swapping_graphs(w,m,rng);
-            insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,1,rng);
-            boundary_condition_final_state(w,m,pnif,1,rng);
-            clustering(w,m);
-            flip_cluster(w,rng);
+    w->beta = T;
+    for(int i=0;i<thermal;i++) {
+        remove_vertices(w);
+        swapping_graphs(w,m,rng);
+        insert_vertices(w,m,rng);
+        boundary_condition_initial_state(w,m,0,rng);
+        boundary_condition_final_state(w,m,pnif,2,rng);
+        clustering(w,m);
+        flip_cluster(w,rng);
+        if((i+1)%block_size==0) {
+            printf("themral : %d\n",i+1);
         }
     }
-    w->beta = T;
     printf("end of thermalization!\n");
 
     // measurement
@@ -452,13 +455,14 @@ int main(int argc, char** argv) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,1,rng);
-            boundary_condition_final_state(w,m,pnif,1,rng);
+            boundary_condition_initial_state(w,m,0,rng);
+            boundary_condition_final_state(w,m,pnif,2,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
 
-        if(ninfected_initial_state(w)==1) {
+        //if(ninfected_initial_state(w)==1) {
+        if(1) {
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
         }
