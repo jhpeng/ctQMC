@@ -7,59 +7,7 @@
 #include "dtype.h"
 #include "sis_models.h"
 #include "update.h"
-
-static int* append_edge(int* edges, int* nedge, int i, int j) {
-    int buffer=1024;
-    int n = *nedge;
-    if(n==0) {
-        edges = (int*)malloc(sizeof(int)*buffer*2);
-    }
-
-    if((n+1)%buffer==0) {
-        int* edges_temp = (int*)malloc(sizeof(int)*((n+1)/buffer+1)*buffer*2);
-        for(int k=0;k<2*n;k++) {
-            edges_temp[k] = edges[k];
-        }
-        free(edges);
-        edges = edges_temp;
-    }
-
-    edges[2*n+0] = i;
-    edges[2*n+1] = j;
-    n++;
-    *nedge = n;
-
-    return edges;
-}
-
-int* read_edgelist(char* filename, int* nnode, int* nedge) {
-    FILE* fp = fopen(filename,"r");
-    if(fp==NULL) {
-        printf("Error!\n");
-        exit(1);
-    }
-
-    int* edges = NULL;
-
-    int i,j;
-    char data[128];
-    int nnode_temp = 0;
-    *nedge = 0;
-    while(fscanf(fp,"%d %d %s",&i,&j,data)==3) {
-        if(nnode_temp<i) {
-            nnode_temp=i;
-        } else if(nnode_temp<j) {
-            nnode_temp=j;
-        }
-        
-        edges = append_edge(edges,nedge,i,j);
-    }
-
-    *nnode = nnode_temp+1;
-    fclose(fp);
-
-    return edges;
-}
+#include "networks.h"
 
 int ninfected_initial_state(world_line* w) {
     int nnode=w->nsite;
@@ -102,18 +50,20 @@ void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng
         }
     } else if(type==1) {
         int ninfected=0;
+        int i_node=-1;
         for(int i=0;i<nnode;i++) {
             if(w->istate[i]==-1) {
                 boundary_condition_frozen_list[i]=1;
             } else {
                 boundary_condition_frozen_list[i]=0;
+                i_node=i;
                 ninfected++;
             }
         }
         if(ninfected==1) {
             int check=1;
             while(check) {
-                int j = gsl_rng_uniform_pos(rng)*nnode;
+                int j = nearest_nb_random_assign(i_node,rng);
                 if(boundary_condition_frozen_list[j]) {
                     boundary_condition_frozen_list[j]=0;
                     check=0;
@@ -421,10 +371,11 @@ int main(int argc, char** argv) {
     for(int i=0;i<(w->nsite);i++) {
         w->istate[i] = -1;
         //if(gsl_rng_uniform_pos(rng)<0.05) {
-        if(i<nif) {
-            w->istate[i] = 1;
-        }
+        //if(i<nif) {
+        //    w->istate[i] = 1;
+        //}
     }
+    w->istate[nearest_nb_arg_max_degree()]=1;
 
     // thermalization
     w->beta = T;
@@ -432,8 +383,8 @@ int main(int argc, char** argv) {
         remove_vertices(w);
         swapping_graphs(w,m,rng);
         insert_vertices(w,m,rng);
-        boundary_condition_initial_state(w,m,0,rng);
-        boundary_condition_final_state(w,m,pnif,2,rng);
+        boundary_condition_initial_state(w,m,1,rng);
+        boundary_condition_final_state(w,m,pnif,1,rng);
         clustering(w,m);
         flip_cluster(w,rng);
         if((i+1)%block_size==0) {
@@ -455,14 +406,14 @@ int main(int argc, char** argv) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,0,rng);
-            boundary_condition_final_state(w,m,pnif,2,rng);
+            boundary_condition_initial_state(w,m,1,rng);
+            boundary_condition_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
 
-        //if(ninfected_initial_state(w)==1) {
-        if(1) {
+        if(ninfected_initial_state(w)==1) {
+        //if(1) {
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
         }
