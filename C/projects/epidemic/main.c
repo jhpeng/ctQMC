@@ -237,6 +237,8 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     if(infected_ratio==NULL) {
         infected_time = (double*)malloc(sizeof(double)*(w->nsite));
         infected_ratio = (double*)malloc(sizeof(double)*ntime);
+        for(int i=0;i<(w->nsite);i++) infected_time[i]=0;
+        for(int i=0;i<ntime;i++) infected_ratio[i]=0;
         start_time = clock();
     }
     int* pstate = w->pstate;
