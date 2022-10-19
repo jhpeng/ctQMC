@@ -9,7 +9,7 @@ static int sequence_size=0;
 static double* sequence=NULL;
 static double* autocorrelation=NULL;
 
-void sequece_malloc(int size, int nobs) {
+void sequence_malloc(int size, int nobs) {
     sequence = (double*)malloc(sizeof(double)*size*nobs);
     autocorrelation = (double*)malloc(sizeof(double)*size*nobs);
 
