@@ -315,7 +315,7 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     double samples[3];
     samples[0] = ninfection_value();
     samples[1] = nrecover_value();
-    samples[2] = total_infected_time;
+    samples[2] = total_infected_time*(w->beta);
     sequence_append(samples);
 
     measurement_count++;

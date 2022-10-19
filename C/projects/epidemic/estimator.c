@@ -14,8 +14,10 @@ void sequence_malloc(int size, int nobs) {
     autocorrelation = (double*)malloc(sizeof(double)*size*nobs);
 
     for(int i=0;i<size;i++){
-        for(int j=0;j<nobs;j++) sequence[i*nobs+j]=0;
-        autocorrelation[i]=0;
+        for(int j=0;j<nobs;j++) {
+            sequence[i*nobs+j]=0;
+            autocorrelation[i*nobs+j]=0;
+        }
     }
 
     sequence_size = size;
@@ -31,7 +33,9 @@ void sequence_append(double* samples) {
 
     for(int i=0;i<nobs;i++) {
         sequence[index+i] = samples[i];
+        printf("%.12e ",samples[i]);
     }
+    printf("\n");
 
     if(filled_flag) {
         for(int i=1;i<(size+1);i++) {
@@ -46,6 +50,8 @@ void sequence_append(double* samples) {
 
     if(sequence_tag==size) {
         filled_flag=1;
+
+        sequence_tag=0;
     }
 
     if(sequence_append_count==size) {
@@ -53,13 +59,9 @@ void sequence_append(double* samples) {
         for(int i=0;i<size;i++) {
             for(int j=0;j<nobs;j++) {
                 autocorrelation[i*nobs+j] = autocorrelation[i*nobs+j]/sequence_append_count;
-            }
-        }
-        for(int i=1;i<size;i++) {
-            for(int j=0;j<nobs;j++) {
-                autocorrelation[i*nobs+j] -= autocorrelation[j];
-
                 fprintf(file_a,"%.12e ",autocorrelation[i*nobs+j]);
+
+                autocorrelation[i*nobs+j]=0;
             }
             fprintf(file_a,"\n");
         }
