@@ -8,6 +8,7 @@
 #include "sis_models.h"
 #include "update.h"
 #include "networks.h"
+#include "estimator.h"
 
 int ninfected_initial_state(world_line* w) {
     int nnode=w->nsite;
@@ -234,13 +235,16 @@ static double* infected_ratio=NULL;
 static double* infected_time=NULL;
 static double total_infected_time_ave=0;
 static double ninfection_ave=0;
-static double nrecover_ave=0;;
+static double nrecover_ave=0;
+static double ntrial_ave=0;
 void measurement(world_line* w, model* m, double* time_list, int ntime, int block_size) {
     if(infected_ratio==NULL) {
         infected_time = (double*)malloc(sizeof(double)*(w->nsite));
         infected_ratio = (double*)malloc(sizeof(double)*ntime);
         for(int i=0;i<(w->nsite);i++) infected_time[i]=0;
         for(int i=0;i<ntime;i++) infected_ratio[i]=0;
+
+        sequence_malloc(block_size,3);
         start_time = clock();
     }
     int* pstate = w->pstate;
@@ -307,6 +311,12 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     total_infected_time_ave += total_infected_time;
     ninfection_ave += ninfection_value();
     nrecover_ave  += nrecover_value();
+    
+    double samples[3];
+    samples[0] = ninfection_value();
+    samples[1] = nrecover_value();
+    samples[2] = total_infected_time;
+    sequence_append(samples);
 
     measurement_count++;
 
@@ -331,14 +341,20 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
         nrecover_ave = nrecover_ave/block_size;
         ninfection_ave = ninfection_ave/block_size;
+        ntrial_ave = ntrial_ave/block_size;
         total_infected_time_ave = total_infected_time_ave/block_size*(w->beta);
-        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection_ave,nrecover_ave,total_infected_time_ave);
+        fprintf(file_g,"%.12e %.12e %.12e %.12e\n",ninfection_ave,nrecover_ave,total_infected_time_ave,ntrial_ave);
 
         printf("total infected time = %.12e\n",total_infected_time_ave);
+        printf("average # of trial  = %.12e\n",ntrial_ave);
 
         save_configuration(file_conf,w,m,time_list,ntime);
 
         total_infected_time_ave=0;
+        nrecover_ave=0;
+        ninfection_ave=0;
+        ntrial_ave=0;
+
         fclose(file_conf);
         fclose(file_t);
         fclose(file_s);
@@ -425,6 +441,7 @@ int main(int argc, char** argv) {
 
         if(ninfected_initial_state(w)==1) {
         //if(1) {
+            ntrial_ave+=ntrial;
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
 

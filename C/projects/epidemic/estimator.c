@@ -53,6 +53,11 @@ void sequence_append(double* samples) {
         for(int i=0;i<size;i++) {
             for(int j=0;j<nobs;j++) {
                 autocorrelation[i*nobs+j] = autocorrelation[i*nobs+j]/sequence_append_count;
+            }
+        }
+        for(int i=1;i<size;i++) {
+            for(int j=0;j<nobs;j++) {
+                autocorrelation[i*nobs+j] -= autocorrelation[j];
 
                 fprintf(file_a,"%.12e ",autocorrelation[i*nobs+j]);
             }
