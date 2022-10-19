@@ -428,7 +428,7 @@ int main(int argc, char** argv) {
 
     int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<1;i++) {
+        for(int i=0;i<10;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
