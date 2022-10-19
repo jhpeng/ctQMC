@@ -33,9 +33,7 @@ void sequence_append(double* samples) {
 
     for(int i=0;i<nobs;i++) {
         sequence[index+i] = samples[i];
-        printf("%.12e ",samples[i]);
     }
-    printf("\n");
 
     if(filled_flag) {
         for(int i=1;i<(size+1);i++) {
