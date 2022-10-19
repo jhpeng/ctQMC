@@ -232,7 +232,7 @@ time_t start_time,end_time;
 unsigned long int measurement_count=0;
 double* infected_ratio=NULL;
 double* infected_time=NULL;
-double total_infected_time=0;
+double total_infected_time_ave=0;
 void measurement(world_line* w, model* m, double* time_list, int ntime, int block_size) {
     if(infected_ratio==NULL) {
         infected_time = (double*)malloc(sizeof(double)*(w->nsite));
@@ -253,6 +253,8 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     vertex* sequence = w->sequenceB;
     if(w->flag) 
         sequence = w->sequenceA;
+
+    double total_infected_time=0;
 
     int i=0;
     int index, i_node;
@@ -289,6 +291,7 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         if(pstate[i_node]==1)
             total_infected_time += (1.0-infected_time[i_node]);
     }
+    total_infected_time_ave += total_infected_time;
 
     for(;i<ntime;i++) {
         double ir=0;
@@ -321,17 +324,16 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 
         double ninfection = ninfection_ave_value();
         double nrecover  = nrecover_ave_value();
-        total_infected_time = total_infected_time/block_size*(w->beta);
-        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection,nrecover,total_infected_time);
+        total_infected_time_ave = total_infected_time_ave/block_size*(w->beta);
+        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection,nrecover,total_infected_time_ave);
 
-        print_ncluster_flippable();
         print_ninfection();
         print_nrecover();
-        printf("total infected time = %.12e\n",total_infected_time);
+        printf("total infected time = %.12e\n",total_infected_time_ave);
 
         save_configuration(file_conf,w,m,time_list,ntime);
 
-        total_infected_time=0;
+        total_infected_time_ave=0;
         fclose(file_conf);
         fclose(file_t);
         fclose(file_s);
@@ -389,7 +391,7 @@ int main(int argc, char** argv) {
         boundary_condition_final_state(w,m,pnif,1,rng);
         clustering(w,m);
         flip_cluster(w,rng);
-        if((i+1)%block_size==0) {
+        if((i+1)%1000==0) {
             printf("themral : %d\n",i+1);
         }
     }
@@ -403,8 +405,9 @@ int main(int argc, char** argv) {
         time_list[i] = (dt*i)/T;
     }
 
+    int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<10;i++) {
+        for(int i=0;i<1;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
@@ -413,11 +416,14 @@ int main(int argc, char** argv) {
             clustering(w,m);
             flip_cluster(w,rng);
         }
+        ntrial++;
 
         if(ninfected_initial_state(w)==1) {
         //if(1) {
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
+
+            ntrial=0;
         }
     }
 

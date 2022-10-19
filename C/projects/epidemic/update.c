@@ -351,26 +351,12 @@ void clustering(world_line* w, model* m) {
 }
 
 
-static int ncluster_flippable_count=0;
-static double ncluster_flippable_ave=0;
-double ncluster_flippable_ave_value() {
-    return ncluster_flippable_ave/ncluster_flippable_count;
-}
-
-void print_ncluster_flippable() {
-    ncluster_flippable_ave = ncluster_flippable_ave/ncluster_flippable_count;
-    printf("# of flippable cluster = %.12e \n",ncluster_flippable_ave);
-    ncluster_flippable_ave=0;
-    ncluster_flippable_count=0;
-}
-
 void flip_cluster(world_line* w, gsl_rng* rng) {
     int* state;
     int hNspin,idv,idr,id,p,i,j;
 
     int mnspin = w->mnspin;
     int nsite  = w->nsite;
-    int ncluster_flippable=0;
 
     vertex* sequence = w->sequenceB;
     if(w->flag) 
@@ -384,7 +370,6 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             idv = i*mnspin+j;
             idr = root(w->cluster,idv);
             if(w->weight[idr]>0) {
-                ncluster_flippable++;
                 if(gsl_rng_uniform_pos(rng)<0.5) {
                     w->weight[idr] =  0;
                 } else {
@@ -396,9 +381,6 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             }
         }
     }
-    ncluster_flippable_ave += (double)ncluster_flippable;
-    ncluster_flippable_count++;
-    //printf("%d \n",ncluster_flippable);
 
     for(i=0;i<nsite;i++) {
         id = w->first[i];
