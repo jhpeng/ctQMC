@@ -93,31 +93,15 @@ static void uniform_sequence_sampling(model* m, double lam, double start, gsl_rn
     }
 }
 
-static int ninfection_count=0;
-static int nrecover_count=0;
-static double ninfection_ave=0;
-static double nrecover_ave=0;
+static int ninfection=0;
+static int nrecover=0;
 
-double ninfection_ave_value() {
-    return ninfection_ave/ninfection_count;
+double ninfection_value() {
+    return ninfection;
 }
 
-double nrecover_ave_value() {
-    return nrecover_ave/nrecover_count;
-}
-
-void print_ninfection() {
-    ninfection_ave = ninfection_ave/ninfection_count;
-    printf("# of infection = %.12e\n",ninfection_ave);
-    ninfection_ave = 0;
-    ninfection_count=0;
-}
-
-void print_nrecover() {
-    nrecover_ave = nrecover_ave/nrecover_count;
-    printf("# of recover = %.12e\n",nrecover_ave);
-    nrecover_ave = 0;
-    nrecover_count=0;
+double nrecover_value() {
+    return nrecover;
 }
 
 void remove_vertices(world_line* w) {
@@ -130,8 +114,9 @@ void remove_vertices(world_line* w) {
         sequence2 = w->sequenceB;
     }
 
-    int ninfection=0;
-    int nrecover=0;
+    ninfection=0;
+    nrecover=0;
+
     int check_delete;
     int i,j,k;
     k=0;
@@ -157,12 +142,6 @@ void remove_vertices(world_line* w) {
     }
     w->nvertices = k;
     w->flag = !(w->flag);
-
-    ninfection_ave += (double)ninfection;
-    nrecover_ave += (double)nrecover;
-
-    ninfection_count++;
-    nrecover_count++;
 }
 
 void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
@@ -349,7 +328,6 @@ void clustering(world_line* w, model* m) {
 **  }
 */
 }
-
 
 void flip_cluster(world_line* w, gsl_rng* rng) {
     int* state;

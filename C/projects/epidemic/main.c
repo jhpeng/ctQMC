@@ -228,11 +228,13 @@ void save_configuration(FILE* file, world_line* w, model* m, double* time_list, 
     }
 }
 
-time_t start_time,end_time;
-unsigned long int measurement_count=0;
-double* infected_ratio=NULL;
-double* infected_time=NULL;
-double total_infected_time_ave=0;
+static time_t start_time,end_time;
+static unsigned long int measurement_count=0;
+static double* infected_ratio=NULL;
+static double* infected_time=NULL;
+static double total_infected_time_ave=0;
+static double ninfection_ave=0;
+static double nrecover_ave=0;;
 void measurement(world_line* w, model* m, double* time_list, int ntime, int block_size) {
     if(infected_ratio==NULL) {
         infected_time = (double*)malloc(sizeof(double)*(w->nsite));
@@ -291,7 +293,6 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         if(pstate[i_node]==1)
             total_infected_time += (1.0-infected_time[i_node]);
     }
-    total_infected_time_ave += total_infected_time;
 
     for(;i<ntime;i++) {
         double ir=0;
@@ -301,6 +302,12 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         ir = ir/nnode;
         infected_ratio[i] += ir;
     }
+
+    // collecting the obeservable
+    total_infected_time_ave += total_infected_time;
+    ninfection_ave += ninfection_value();
+    nrecover_ave  += nrecover_value();
+
     measurement_count++;
 
     if(measurement_count==block_size) {
@@ -322,13 +329,11 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         fprintf(file_s,"\n");
         measurement_count=0;
 
-        double ninfection = ninfection_ave_value();
-        double nrecover  = nrecover_ave_value();
+        nrecover_ave = nrecover_ave/block_size;
+        ninfection_ave = ninfection_ave/block_size;
         total_infected_time_ave = total_infected_time_ave/block_size*(w->beta);
-        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection,nrecover,total_infected_time_ave);
+        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection_ave,nrecover_ave,total_infected_time_ave);
 
-        print_ninfection();
-        print_nrecover();
         printf("total infected time = %.12e\n",total_infected_time_ave);
 
         save_configuration(file_conf,w,m,time_list,ntime);
