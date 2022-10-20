@@ -93,31 +93,15 @@ static void uniform_sequence_sampling(model* m, double lam, double start, gsl_rn
     }
 }
 
-static int ninfection_count=0;
-static int nrecover_count=0;
-static double ninfection_ave=0;
-static double nrecover_ave=0;
+static int ninfection=0;
+static int nrecover=0;
 
-double ninfection_ave_value() {
-    return ninfection_ave/ninfection_count;
+double ninfection_value() {
+    return ninfection;
 }
 
-double nrecover_ave_value() {
-    return nrecover_ave/nrecover_count;
-}
-
-void print_ninfection() {
-    ninfection_ave = ninfection_ave/ninfection_count;
-    printf("# of infection = %.12e\n",ninfection_ave);
-    ninfection_ave = 0;
-    ninfection_count=0;
-}
-
-void print_nrecover() {
-    nrecover_ave = nrecover_ave/nrecover_count;
-    printf("# of recover = %.12e\n",nrecover_ave);
-    nrecover_ave = 0;
-    nrecover_count=0;
+double nrecover_value() {
+    return nrecover;
 }
 
 void remove_vertices(world_line* w) {
@@ -130,8 +114,9 @@ void remove_vertices(world_line* w) {
         sequence2 = w->sequenceB;
     }
 
-    int ninfection=0;
-    int nrecover=0;
+    ninfection=0;
+    nrecover=0;
+
     int check_delete;
     int i,j,k;
     k=0;
@@ -157,12 +142,6 @@ void remove_vertices(world_line* w) {
     }
     w->nvertices = k;
     w->flag = !(w->flag);
-
-    ninfection_ave += (double)ninfection;
-    nrecover_ave += (double)nrecover;
-
-    ninfection_count++;
-    nrecover_count++;
 }
 
 void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
@@ -350,27 +329,12 @@ void clustering(world_line* w, model* m) {
 */
 }
 
-
-static int ncluster_flippable_count=0;
-static double ncluster_flippable_ave=0;
-double ncluster_flippable_ave_value() {
-    return ncluster_flippable_ave/ncluster_flippable_count;
-}
-
-void print_ncluster_flippable() {
-    ncluster_flippable_ave = ncluster_flippable_ave/ncluster_flippable_count;
-    printf("# of flippable cluster = %.12e \n",ncluster_flippable_ave);
-    ncluster_flippable_ave=0;
-    ncluster_flippable_count=0;
-}
-
 void flip_cluster(world_line* w, gsl_rng* rng) {
     int* state;
     int hNspin,idv,idr,id,p,i,j;
 
     int mnspin = w->mnspin;
     int nsite  = w->nsite;
-    int ncluster_flippable=0;
 
     vertex* sequence = w->sequenceB;
     if(w->flag) 
@@ -384,7 +348,6 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             idv = i*mnspin+j;
             idr = root(w->cluster,idv);
             if(w->weight[idr]>0) {
-                ncluster_flippable++;
                 if(gsl_rng_uniform_pos(rng)<0.5) {
                     w->weight[idr] =  0;
                 } else {
@@ -396,9 +359,6 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             }
         }
     }
-    ncluster_flippable_ave += (double)ncluster_flippable;
-    ncluster_flippable_count++;
-    //printf("%d \n",ncluster_flippable);
 
     for(i=0;i<nsite;i++) {
         id = w->first[i];

@@ -8,6 +8,7 @@
 #include "sis_models.h"
 #include "update.h"
 #include "networks.h"
+#include "estimator.h"
 
 int ninfected_initial_state(world_line* w) {
     int nnode=w->nsite;
@@ -124,6 +125,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
 
         double pdis = 1.0;
         if(inf!=0) pdis=(p*nnode)/inf;
+        if(inf>p*nnode) pdis=0;
         
         for(int i=0;i<nnode;i++) {
             if(pstate[i]==1 && (gsl_rng_uniform_pos(rng)<pdis)) {
@@ -228,17 +230,22 @@ void save_configuration(FILE* file, world_line* w, model* m, double* time_list, 
     }
 }
 
-time_t start_time,end_time;
-unsigned long int measurement_count=0;
-double* infected_ratio=NULL;
-double* infected_time=NULL;
-double total_infected_time=0;
+static time_t start_time,end_time;
+static unsigned long int measurement_count=0;
+static double* infected_ratio=NULL;
+static double* infected_time=NULL;
+static double total_infected_time_ave=0;
+static double ninfection_ave=0;
+static double nrecover_ave=0;
+static double ntrial_ave=0;
 void measurement(world_line* w, model* m, double* time_list, int ntime, int block_size) {
     if(infected_ratio==NULL) {
         infected_time = (double*)malloc(sizeof(double)*(w->nsite));
         infected_ratio = (double*)malloc(sizeof(double)*ntime);
         for(int i=0;i<(w->nsite);i++) infected_time[i]=0;
         for(int i=0;i<ntime;i++) infected_ratio[i]=0;
+
+        sequence_malloc(block_size,3);
         start_time = clock();
     }
     int* pstate = w->pstate;
@@ -253,6 +260,8 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
     vertex* sequence = w->sequenceB;
     if(w->flag) 
         sequence = w->sequenceA;
+
+    double total_infected_time=0;
 
     int i=0;
     int index, i_node;
@@ -298,6 +307,18 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         ir = ir/nnode;
         infected_ratio[i] += ir;
     }
+
+    // collecting the obeservable
+    total_infected_time_ave += total_infected_time;
+    ninfection_ave += ninfection_value();
+    nrecover_ave  += nrecover_value();
+    
+    double samples[3];
+    samples[0] = ninfection_value();
+    samples[1] = nrecover_value();
+    samples[2] = total_infected_time*(w->beta);
+    sequence_append(samples);
+
     measurement_count++;
 
     if(measurement_count==block_size) {
@@ -319,19 +340,22 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
         fprintf(file_s,"\n");
         measurement_count=0;
 
-        double ninfection = ninfection_ave_value();
-        double nrecover  = nrecover_ave_value();
-        total_infected_time = total_infected_time/block_size*(w->beta);
-        fprintf(file_g,"%.12e %.12e %.12e\n",ninfection,nrecover,total_infected_time);
+        nrecover_ave = nrecover_ave/block_size;
+        ninfection_ave = ninfection_ave/block_size;
+        ntrial_ave = ntrial_ave/block_size;
+        total_infected_time_ave = total_infected_time_ave/block_size*(w->beta);
+        fprintf(file_g,"%.12e %.12e %.12e %.12e\n",ninfection_ave,nrecover_ave,total_infected_time_ave,ntrial_ave);
 
-        print_ncluster_flippable();
-        print_ninfection();
-        print_nrecover();
-        printf("total infected time = %.12e\n",total_infected_time);
+        printf("total infected time = %.12e\n",total_infected_time_ave);
+        printf("average # of trial  = %.12e\n",ntrial_ave);
 
         save_configuration(file_conf,w,m,time_list,ntime);
 
-        total_infected_time=0;
+        total_infected_time_ave=0;
+        nrecover_ave=0;
+        ninfection_ave=0;
+        ntrial_ave=0;
+
         fclose(file_conf);
         fclose(file_t);
         fclose(file_s);
@@ -389,22 +413,23 @@ int main(int argc, char** argv) {
         boundary_condition_final_state(w,m,pnif,1,rng);
         clustering(w,m);
         flip_cluster(w,rng);
-        if((i+1)%block_size==0) {
+        if((i+1)%1000==0) {
             printf("themral : %d\n",i+1);
         }
     }
     printf("end of thermalization!\n");
 
     // measurement
-    double dt = 0.1;
+    double dt = 1.0;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
         time_list[i] = (dt*i)/T;
     }
 
+    int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<10;i++) {
+        for(int i=0;i<1;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
@@ -413,11 +438,15 @@ int main(int argc, char** argv) {
             clustering(w,m);
             flip_cluster(w,rng);
         }
+        ntrial++;
 
         if(ninfected_initial_state(w)==1) {
         //if(1) {
+            ntrial_ave+=ntrial;
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
+
+            ntrial=0;
         }
     }
 

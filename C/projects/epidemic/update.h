@@ -4,17 +4,9 @@
 
 #include "dtype.h"
 
-double ninfection_ave_value();
+double ninfection_value();
 
-double nrecover_ave_value();
-
-double ncluster_flippable_ave_value();
-
-void print_ninfection();
-
-void print_nrecover();
-
-void print_ncluster_flippable();
+double nrecover_value();
 
 void remove_vertices(world_line* w);
 
