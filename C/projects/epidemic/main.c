@@ -125,6 +125,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
 
         double pdis = 1.0;
         if(inf!=0) pdis=(p*nnode)/inf;
+        if(inf>p*nnode) pdis=0;
         
         for(int i=0;i<nnode;i++) {
             if(pstate[i]==1 && (gsl_rng_uniform_pos(rng)<pdis)) {
@@ -419,7 +420,7 @@ int main(int argc, char** argv) {
     printf("end of thermalization!\n");
 
     // measurement
-    double dt = 0.1;
+    double dt = 1.0;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
@@ -428,7 +429,7 @@ int main(int argc, char** argv) {
 
     int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<10;i++) {
+        for(int i=0;i<1;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
