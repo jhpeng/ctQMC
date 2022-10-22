@@ -401,7 +401,8 @@ int main(int argc, char** argv) {
         //    w->istate[i] = 1;
         //}
     }
-    w->istate[nearest_nb_arg_max_degree()]=1;
+    //w->istate[nearest_nb_arg_max_degree()]=1;
+    w->istate[71]=1;
 
     // thermalization
     w->beta = T;
@@ -409,7 +410,7 @@ int main(int argc, char** argv) {
         remove_vertices(w);
         swapping_graphs(w,m,rng);
         insert_vertices(w,m,rng);
-        boundary_condition_initial_state(w,m,1,rng);
+        boundary_condition_initial_state(w,m,0,rng);
         boundary_condition_final_state(w,m,pnif,1,rng);
         clustering(w,m);
         flip_cluster(w,rng);
@@ -420,7 +421,7 @@ int main(int argc, char** argv) {
     printf("end of thermalization!\n");
 
     // measurement
-    double dt = 1.0;
+    double dt = T/100.0;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
@@ -429,11 +430,11 @@ int main(int argc, char** argv) {
 
     int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<1;i++) {
+        for(int i=0;i<10;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,1,rng);
+            boundary_condition_initial_state(w,m,0,rng);
             boundary_condition_final_state(w,m,pnif,1,rng);
             clustering(w,m);
             flip_cluster(w,rng);
