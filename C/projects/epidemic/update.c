@@ -371,5 +371,12 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
         } else {
             w->istate[i] = -1;
         }
+
+        id = w->last[i];
+        if(id!=-1) {
+            p = id/mnspin;
+            j  =id%mnspin;
+            w->pstate[i] = (sequence[p]).state[j];
+        }
     }
 }
