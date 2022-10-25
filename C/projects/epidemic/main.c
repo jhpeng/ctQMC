@@ -388,8 +388,9 @@ int main(int argc, char** argv) {
     int block_size=atoi(argv[6]);
     int nblock = atoi(argv[7]);
     int thermal = atoi(argv[8]);
+    int nskip = atoi(argv[9]);
     int nsweep  = nblock*block_size;
-    unsigned long int seed=atoi(argv[9]);
+    unsigned long int seed=atoi(argv[10]);
 
     int nnode;
     int nedge;
@@ -475,7 +476,7 @@ int main(int argc, char** argv) {
 
     int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<10;i++) {
+        for(int i=0;i<nskip;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
