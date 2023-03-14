@@ -21,6 +21,17 @@ int ninfected_initial_state(world_line* w) {
     return (ninfected+nnode)/2;
 }
 
+int ninfected_final_state(world_line* w) {
+    int nnode=w->nsite;
+    int ninfected=0;
+
+    for(int i=0;i<nnode;i++) {
+        ninfected+=w->pstate[i];
+    }
+
+    return (ninfected+nnode)/2;
+}
+
 int* boundary_condition_frozen_list=NULL;
 void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng* rng) {
     int nnode = m->nsite;
@@ -368,17 +379,18 @@ void measurement(world_line* w, model* m, double* time_list, int ntime, int bloc
 }
 
 int main(int argc, char** argv) {
-    char filename[128] = "/home/alan/Works/path_sampling/networks/jupyters/test.edgelist";
+    char filename[128] = "/hpc/home/jp549/src/ctQMC/C/projects/epidemic/network/test.edgelist";
     double alpha=atof(argv[1]);
     double gamma=atof(argv[2]);
     double T = atof(argv[3]);
-
     int nif=atoi(argv[4]);
-    int block_size=atoi(argv[5]);
-    int nblock = atoi(argv[6]);
-    int thermal = atoi(argv[7]);
+    int running_mode=atoi(argv[5]);
+    int block_size=atoi(argv[6]);
+    int nblock = atoi(argv[7]);
+    int thermal = atoi(argv[8]);
+    int nskip = atoi(argv[9]);
     int nsweep  = nblock*block_size;
-    unsigned long int seed=atoi(argv[8]);
+    unsigned long int seed=atoi(argv[10]);
 
     int nnode;
     int nedge;
@@ -393,15 +405,50 @@ int main(int argc, char** argv) {
     model* m = sis_model_uniform_infection(alpha,gamma,nnode,nedge,edges);
     world_line* w = malloc_world_line(1024,2*(m->mhnspin),m->nsite);
 
-    // initial state
-    for(int i=0;i<(w->nsite);i++) {
-        w->istate[i] = -1;
-        //if(gsl_rng_uniform_pos(rng)<0.05) {
-        //if(i<nif) {
-        //    w->istate[i] = 1;
-        //}
+    // setup running mode and initial state
+    // running mode : 0
+    //      initial state - fixing patient0
+    //      final state   - # of infection > nif
+    //
+    // running mode : 1
+    //      initial state - moving patient0
+    //      final state   - # of infection > nif
+    //
+    // running mode : 2 
+    //      initial state - all get infected
+    //      final state   - all get recovery
+    //
+
+    int initial_condition_type=0;
+    int final_condition_type=0;
+    int nocheck_for_measurement=0;
+
+    if(running_mode==0) {
+        for(int i=0;i<(w->nsite);i++) w->istate[i] = -1;
+        //w->istate[nearest_nb_arg_max_degree()]=1;
+        w->istate[71]=1;
+
+        initial_condition_type=0;
+        final_condition_type=1;
+        nocheck_for_measurement=0;
+    } else if(running_mode==1) {
+        for(int i=0;i<(w->nsite);i++) w->istate[i] = -1;
+        //w->istate[nearest_nb_arg_max_degree()]=1;
+        w->istate[71]=1;
+
+        initial_condition_type=1;
+        final_condition_type=1;
+        nocheck_for_measurement=0;
+    } else if(running_mode==2) {
+        for(int i=0;i<(w->nsite);i++) w->istate[i] = 1;
+
+        initial_condition_type=0;
+        final_condition_type=2;
+        nocheck_for_measurement=1;
+    } else {
+        printf("There is no running mode %d!\n",running_mode);
+        exit(1);
     }
-    w->istate[nearest_nb_arg_max_degree()]=1;
 
     // thermalization
     w->beta = T;
@@ -409,8 +456,8 @@ int main(int argc, char** argv) {
         remove_vertices(w);
         swapping_graphs(w,m,rng);
         insert_vertices(w,m,rng);
-        boundary_condition_initial_state(w,m,1,rng);
-        boundary_condition_final_state(w,m,pnif,1,rng);
+        boundary_condition_initial_state(w,m,initial_condition_type,rng);
+        boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
         clustering(w,m);
         flip_cluster(w,rng);
         if((i+1)%1000==0) {
@@ -420,7 +467,7 @@ int main(int argc, char** argv) {
     printf("end of thermalization!\n");
 
     // measurement
-    double dt = 1.0;
+    double dt = T/100.0;
     int ntime = (int)(T/dt+1);
     double* time_list = (double*)malloc(sizeof(double)*ntime);
     for(int i=0;i<ntime;i++) {
@@ -429,19 +476,18 @@ int main(int argc, char** argv) {
 
     int ntrial=0;
     for(int i_sweep=0;i_sweep<nsweep;) {
-        for(int i=0;i<1;i++) {
+        for(int i=0;i<nskip;i++) {
             remove_vertices(w);
             swapping_graphs(w,m,rng);
             insert_vertices(w,m,rng);
-            boundary_condition_initial_state(w,m,1,rng);
-            boundary_condition_final_state(w,m,pnif,1,rng);
+            boundary_condition_initial_state(w,m,initial_condition_type,rng);
+            boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
             clustering(w,m);
             flip_cluster(w,rng);
         }
         ntrial++;
 
-        if(ninfected_initial_state(w)==1) {
-        //if(1) {
+        if((ninfected_initial_state(w)==1 && ninfected_final_state(w)>nif) || nocheck_for_measurement) {
             ntrial_ave+=ntrial;
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
