@@ -10,47 +10,64 @@
 #include "networks.h"
 #include "estimator.h"
 
+// Returns the initial number of infected nodes in the world line
 int ninfected_initial_state(world_line* w) {
-    int nnode=w->nsite;
-    int ninfected=0;
+    int nnode=w->nsite;  // Number of nodes in the world line
+    int ninfected=0;     // Number of infected nodes
 
+    // Iterate over all nodes in the world line
     for(int i=0;i<nnode;i++) {
-        ninfected+=w->istate[i];
+        ninfected+=w->istate[i];  // Add 1 to ninfected for each infected node
     }
 
+    // Return the average of ninfected and nnode, rounded up
     return (ninfected+nnode)/2;
 }
 
+// Returns the final number of infected nodes in the world line
 int ninfected_final_state(world_line* w) {
-    int nnode=w->nsite;
-    int ninfected=0;
+    int nnode=w->nsite;  // Number of nodes in the world line
+    int ninfected=0;     // Number of infected nodes
 
+    // Iterate over all nodes in the world line
     for(int i=0;i<nnode;i++) {
-        ninfected+=w->pstate[i];
+        ninfected+=w->pstate[i];  // Add 1 to ninfected for each infected node
     }
 
+    // Return the average of ninfected and nnode, rounded up
     return (ninfected+nnode)/2;
 }
 
-int* boundary_condition_frozen_list=NULL;
-void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng* rng) {
-    int nnode = m->nsite;
-    int nbond = m->nbond;
-    int length = nnode+(w->nvertices);
-    realloc_world_line(w,length);
 
+int* boundary_condition_frozen_list = NULL; // global variable for keeping track of frozen nodes
+
+// Function for initializing boundary conditions
+void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng* rng) {
+    int nnode = m->nsite; // number of nodes in the lattice
+    int nbond = m->nbond; // number of bonds in the lattice
+    int length = nnode + (w->nvertices); // length of the worldline
+
+    // Reallocate memory for the worldline
+    realloc_world_line(w, length);
+
+    // Get the sequence arrays of the worldline
     vertex* sequence1 = w->sequenceB;
     vertex* sequence2 = w->sequenceA;
-    if(w->flag) {
+
+    // Swap sequence arrays depending on the worldline flag
+    if (w->flag) {
         sequence1 = w->sequenceA;
         sequence2 = w->sequenceB;
     }
 
-    if(boundary_condition_frozen_list==NULL) {
-        boundary_condition_frozen_list = (int*)malloc(sizeof(int)*nnode);
+    // If frozen node list doesn't exist, allocate memory for it
+    if (boundary_condition_frozen_list == NULL) {
+        boundary_condition_frozen_list = (int*) malloc(sizeof(int) * nnode);
     }
 
-    int n=0;
+    int n = 0; // counter for the vertex array
+
+    // Assign boundary conditions based on type
     if(type==0) {
         for(int i=0;i<nnode;i++) {
             (sequence2[n]).tau      = 0.0;
