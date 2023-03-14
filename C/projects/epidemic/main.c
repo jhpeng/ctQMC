@@ -194,8 +194,9 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
     w->nvertices = n;
 }
 
-
 static void print_state(int* state, int nnode) {
+    // This function prints the state of each node in the world_line.
+    // It takes as input an array of node states and the number of nodes.
     for(int i=0;i<nnode;i++) {
         printf("%d ",(state[i]+1)/2);
     }
@@ -203,6 +204,8 @@ static void print_state(int* state, int nnode) {
 }
 
 static void save_state(FILE* file, int* state, int nnode) {
+    // This function writes the state of each node in the world_line to a file.
+    // It takes as input a file pointer, an array of node states, and the number of nodes.
     for(int i=0;i<nnode;i++) {
         fprintf(file,"%d ",(state[i]+1)/2);
     }
@@ -210,35 +213,44 @@ static void save_state(FILE* file, int* state, int nnode) {
 }
 
 void show_configuration(world_line* w, model* m, double* time_list, int ntime) {
+    // This function displays the configuration of the world_line at specified times.
+    // It takes as input a pointer to the world_line, a pointer to the model, an array of times,
+    // and the number of times to display.
     int* pstate = w->pstate;
     int nnode = w->nsite;
     int mhnspin = m->mhnspin;
 
+    // Copy the initial state of the world_line nodes to pstate.
     for(int i=0;i<nnode;i++) pstate[i] = w->istate[i];
 
+    // Get the vertex sequence to traverse.
     vertex* sequence = w->sequenceB;
     if(w->flag) 
         sequence = w->sequenceA;
 
-    int i=0;
-    int index, i_node;
+    int i=0; // Index of current time to display
+    int index, i_node; 
     vertex* v;
     for(int n=0;n<(w->nvertices) && i<ntime;n++) {
         v = &(sequence[n]);
-        if(time_list[i]<(v->tau)) {
+        if(time_list[i]<(v->tau)) { // Check if it's time to display the state
             print_state(pstate,nnode);
             i++;
         }
 
+        // Update the state of nodes according to vertex information.
         for(i_node=0;i_node<(v->hNspin);i_node++) {
             index = m->bond2index[(v->bond)*mhnspin+i_node];
             pstate[index] = v->state[(v->hNspin)+i_node];
         }
     }
+
+    // If there are remaining times to display, display the last state.
     for(;i<ntime;i++) {
         print_state(pstate,nnode);
     }
 }
+
 
 void save_configuration(FILE* file, world_line* w, model* m, double* time_list, int ntime) {
     int* pstate = w->pstate;
