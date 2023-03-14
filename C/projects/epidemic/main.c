@@ -39,35 +39,39 @@ int ninfected_final_state(world_line* w) {
 }
 
 
-int* boundary_condition_frozen_list = NULL; // global variable for keeping track of frozen nodes
+// Define a global variable to store the frozen list for boundary condition type 1
+int* boundary_condition_frozen_list=NULL;
 
-// Function for initializing boundary conditions
 void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng* rng) {
-    int nnode = m->nsite; // number of nodes in the lattice
-    int nbond = m->nbond; // number of bonds in the lattice
-    int length = nnode + (w->nvertices); // length of the worldline
+    // Get the number of nodes and bonds in the model
+    int nnode = m->nsite;
+    int nbond = m->nbond;
 
-    // Reallocate memory for the worldline
-    realloc_world_line(w, length);
+    // Calculate the length of the sequence after adding nodes
+    int length = nnode+(w->nvertices);
 
-    // Get the sequence arrays of the worldline
+    // Resize the world line sequence to fit the new nodes
+    realloc_world_line(w,length);
+
+    // Pointers to the two sequences of vertices in the world line
     vertex* sequence1 = w->sequenceB;
     vertex* sequence2 = w->sequenceA;
 
-    // Swap sequence arrays depending on the worldline flag
-    if (w->flag) {
+    // Swap the pointers if the flag in the world line is true
+    if(w->flag) {
         sequence1 = w->sequenceA;
         sequence2 = w->sequenceB;
     }
 
-    // If frozen node list doesn't exist, allocate memory for it
-    if (boundary_condition_frozen_list == NULL) {
-        boundary_condition_frozen_list = (int*) malloc(sizeof(int) * nnode);
+    // Allocate memory for the frozen list if it hasn't been allocated yet
+    if(boundary_condition_frozen_list==NULL) {
+        boundary_condition_frozen_list = (int*)malloc(sizeof(int)*nnode);
     }
 
-    int n = 0; // counter for the vertex array
+    // Counter for the number of vertices in the sequence
+    int n=0;
 
-    // Assign boundary conditions based on type
+    // Assign initial states to the vertices based on the boundary condition type
     if(type==0) {
         for(int i=0;i<nnode;i++) {
             (sequence2[n]).tau      = 0.0;
@@ -125,20 +129,26 @@ void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng
 }
 
 void boundary_condition_final_state(world_line* w, model* m, double p, int type, gsl_rng* rng) {
+    // get the number of nodes and bonds, and calculate the required length
     int nnode = m->nsite;
     int nbond = m->nbond;
     int length = nnode+(w->nvertices);
+    // allocate or reallocate memory for the world line
     realloc_world_line(w,length);
 
+    // get the appropriate sequence depending on the flag
     vertex* sequence = w->sequenceB;
     if(w->flag) {
         sequence = w->sequenceA;
     }
 
+    // get the pointer to the pstate array, and the number of vertices
     int* pstate = w->pstate;
     int n=w->nvertices;
 
+    // set the appropriate final state based on the type of boundary condition
     if(type==0) {
+        // set all nodes to their initial state with tau=1
         for(int i=0;i<nnode;i++) {
             (sequence[n]).tau      = 1.0;
             (sequence[n]).bond     = nbond+i;
@@ -148,6 +158,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
             n++;
         }
     } else if(type==1) {
+        // set boundary nodes based on the infection state of the system and the probability p
         int inf=0;
         for(int i=0;i<nnode;i++) inf += (pstate[i]+1)/2;
 
@@ -166,6 +177,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
             }
         }
     } else if(type==2) {
+        // set frozen nodes to their initial state with tau=1
         for(int i=0;i<nnode;i++) {
             if(pstate[i]==-1) {
                 (sequence[n]).tau      = 1.0;
@@ -178,9 +190,10 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
         }
     }
 
-
+    // update the number of vertices in the world line
     w->nvertices = n;
 }
+
 
 static void print_state(int* state, int nnode) {
     for(int i=0;i<nnode;i++) {
