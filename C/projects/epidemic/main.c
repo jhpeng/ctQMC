@@ -10,47 +10,68 @@
 #include "networks.h"
 #include "estimator.h"
 
+// Returns the initial number of infected nodes in the world line
 int ninfected_initial_state(world_line* w) {
-    int nnode=w->nsite;
-    int ninfected=0;
+    int nnode=w->nsite;  // Number of nodes in the world line
+    int ninfected=0;     // Number of infected nodes
 
+    // Iterate over all nodes in the world line
     for(int i=0;i<nnode;i++) {
-        ninfected+=w->istate[i];
+        ninfected+=w->istate[i];  // Add 1 to ninfected for each infected node
     }
 
+    // Return the average of ninfected and nnode, rounded up
     return (ninfected+nnode)/2;
 }
 
+// Returns the final number of infected nodes in the world line
 int ninfected_final_state(world_line* w) {
-    int nnode=w->nsite;
-    int ninfected=0;
+    int nnode=w->nsite;  // Number of nodes in the world line
+    int ninfected=0;     // Number of infected nodes
 
+    // Iterate over all nodes in the world line
     for(int i=0;i<nnode;i++) {
-        ninfected+=w->pstate[i];
+        ninfected+=w->pstate[i];  // Add 1 to ninfected for each infected node
     }
 
+    // Return the average of ninfected and nnode, rounded up
     return (ninfected+nnode)/2;
 }
 
+
+// Define a global variable to store the frozen list for boundary condition type 1
 int* boundary_condition_frozen_list=NULL;
+
 void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng* rng) {
+    // Get the number of nodes and bonds in the model
     int nnode = m->nsite;
     int nbond = m->nbond;
+
+    // Calculate the length of the sequence after adding nodes
     int length = nnode+(w->nvertices);
+
+    // Resize the world line sequence to fit the new nodes
     realloc_world_line(w,length);
 
+    // Pointers to the two sequences of vertices in the world line
     vertex* sequence1 = w->sequenceB;
     vertex* sequence2 = w->sequenceA;
+
+    // Swap the pointers if the flag in the world line is true
     if(w->flag) {
         sequence1 = w->sequenceA;
         sequence2 = w->sequenceB;
     }
 
+    // Allocate memory for the frozen list if it hasn't been allocated yet
     if(boundary_condition_frozen_list==NULL) {
         boundary_condition_frozen_list = (int*)malloc(sizeof(int)*nnode);
     }
 
+    // Counter for the number of vertices in the sequence
     int n=0;
+
+    // Assign initial states to the vertices based on the boundary condition type
     if(type==0) {
         for(int i=0;i<nnode;i++) {
             (sequence2[n]).tau      = 0.0;
@@ -108,20 +129,26 @@ void boundary_condition_initial_state(world_line* w, model* m, int type, gsl_rng
 }
 
 void boundary_condition_final_state(world_line* w, model* m, double p, int type, gsl_rng* rng) {
+    // get the number of nodes and bonds, and calculate the required length
     int nnode = m->nsite;
     int nbond = m->nbond;
     int length = nnode+(w->nvertices);
+    // allocate or reallocate memory for the world line
     realloc_world_line(w,length);
 
+    // get the appropriate sequence depending on the flag
     vertex* sequence = w->sequenceB;
     if(w->flag) {
         sequence = w->sequenceA;
     }
 
+    // get the pointer to the pstate array, and the number of vertices
     int* pstate = w->pstate;
     int n=w->nvertices;
 
+    // set the appropriate final state based on the type of boundary condition
     if(type==0) {
+        // set all nodes to their initial state with tau=1
         for(int i=0;i<nnode;i++) {
             (sequence[n]).tau      = 1.0;
             (sequence[n]).bond     = nbond+i;
@@ -131,6 +158,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
             n++;
         }
     } else if(type==1) {
+        // set boundary nodes based on the infection state of the system and the probability p
         int inf=0;
         for(int i=0;i<nnode;i++) inf += (pstate[i]+1)/2;
 
@@ -149,6 +177,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
             }
         }
     } else if(type==2) {
+        // set frozen nodes to their initial state with tau=1
         for(int i=0;i<nnode;i++) {
             if(pstate[i]==-1) {
                 (sequence[n]).tau      = 1.0;
@@ -161,11 +190,13 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
         }
     }
 
-
+    // update the number of vertices in the world line
     w->nvertices = n;
 }
 
 static void print_state(int* state, int nnode) {
+    // This function prints the state of each node in the world_line.
+    // It takes as input an array of node states and the number of nodes.
     for(int i=0;i<nnode;i++) {
         printf("%d ",(state[i]+1)/2);
     }
@@ -173,6 +204,8 @@ static void print_state(int* state, int nnode) {
 }
 
 static void save_state(FILE* file, int* state, int nnode) {
+    // This function writes the state of each node in the world_line to a file.
+    // It takes as input a file pointer, an array of node states, and the number of nodes.
     for(int i=0;i<nnode;i++) {
         fprintf(file,"%d ",(state[i]+1)/2);
     }
@@ -180,35 +213,44 @@ static void save_state(FILE* file, int* state, int nnode) {
 }
 
 void show_configuration(world_line* w, model* m, double* time_list, int ntime) {
+    // This function displays the configuration of the world_line at specified times.
+    // It takes as input a pointer to the world_line, a pointer to the model, an array of times,
+    // and the number of times to display.
     int* pstate = w->pstate;
     int nnode = w->nsite;
     int mhnspin = m->mhnspin;
 
+    // Copy the initial state of the world_line nodes to pstate.
     for(int i=0;i<nnode;i++) pstate[i] = w->istate[i];
 
+    // Get the vertex sequence to traverse.
     vertex* sequence = w->sequenceB;
     if(w->flag) 
         sequence = w->sequenceA;
 
-    int i=0;
-    int index, i_node;
+    int i=0; // Index of current time to display
+    int index, i_node; 
     vertex* v;
     for(int n=0;n<(w->nvertices) && i<ntime;n++) {
         v = &(sequence[n]);
-        if(time_list[i]<(v->tau)) {
+        if(time_list[i]<(v->tau)) { // Check if it's time to display the state
             print_state(pstate,nnode);
             i++;
         }
 
+        // Update the state of nodes according to vertex information.
         for(i_node=0;i_node<(v->hNspin);i_node++) {
             index = m->bond2index[(v->bond)*mhnspin+i_node];
             pstate[index] = v->state[(v->hNspin)+i_node];
         }
     }
+
+    // If there are remaining times to display, display the last state.
     for(;i<ntime;i++) {
         print_state(pstate,nnode);
     }
 }
+
 
 void save_configuration(FILE* file, world_line* w, model* m, double* time_list, int ntime) {
     int* pstate = w->pstate;
