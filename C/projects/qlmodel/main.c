@@ -10,6 +10,19 @@
 #include "stats.h"
 #include "union_find.h"
 
+/**
+ * @struct block
+ * @brief Structure representing a block of data samples.
+ *
+ * @var block::samples
+ * Pointer to an array of double values representing the samples.
+ * @var block::nsample
+ * Number of samples in the block.
+ * @var block::index
+ * Current index within the block.
+ * @var block::cap
+ * Maximum capacity of the block.
+ */
 typedef struct block{
     double* samples;
     int nsample;
@@ -32,6 +45,12 @@ block* Nog2_block;
 block* Order1_block;
 block* Order2_block;
 
+/**
+ * @brief Allocates memory for a new block.
+ *
+ * @param cap The maximum capacity of the block.
+ * @return A pointer to the newly allocated block.
+ */
 block* block_alloc(int cap) {
     block* data = (block*)malloc(sizeof(block));
     data->samples = (double*)malloc(sizeof(double)*cap);
@@ -42,11 +61,22 @@ block* block_alloc(int cap) {
     return data;
 }
 
+/**
+ * @brief Frees memory of a block.
+ *
+ * @param data Pointer to the block to be freed.
+ */
 void block_free(block* data) {
     free(data->samples);
     free(data);
 }
 
+/**
+ * @brief Appends a sample to the block.
+ *
+ * @param data Pointer to the block.
+ * @param sample The sample to be appended.
+ */
 void append(block* data, double sample) {
     if(data->index == data->cap) 
         data->index = 0;
@@ -57,6 +87,12 @@ void append(block* data, double sample) {
     if(data->nsample < data->cap) data->nsample++;
 }
 
+/**
+ * @brief Computes the mean value of the samples in a block.
+ *
+ * @param data Pointer to the block.
+ * @return The mean value of the samples in the block.
+ */
 double mean(block* data) {
     double sum=0;
 
@@ -67,6 +103,14 @@ double mean(block* data) {
     return sum/(data->nsample);
 }
 
+/**
+ * @brief Inserts a vertex into the world-line configuration to enforce Gauss law.
+ *
+ * @param w Pointer to the world_line_omp structure.
+ * @param m Pointer to the model structure.
+ * @param n Index of the vertex in the sequence.
+ * @param bond Index of the bond.
+ */
 static void insert_gauss_law_graph(world_line_omp* w, model*m, int n, int bond) {
     vertex* sequence = w->sequenceB[w->nthread-1];
     if(w->flag[w->nthread-1])
@@ -94,6 +138,13 @@ static void insert_gauss_law_graph(world_line_omp* w, model*m, int n, int bond) 
     v->state[7] = w->istate[u[3]];
 }
 
+/**
+ * @brief Enforces Gauss law on a world-line configuration using parallel threads.
+ *
+ * @param w Pointer to the world_line_omp structure.
+ * @param m Pointer to the model structure.
+ * @param rng Pointer to an array of gsl_rng random number generator objects.
+ */
 static void gauss_law(world_line_omp* w, model* m, gsl_rng** rng) {
     int lsize = Lx*Ly;
     int len = (w->len[w->nthread-1]) + lsize;
@@ -156,6 +207,19 @@ static void gauss_law(world_line_omp* w, model* m, gsl_rng** rng) {
     w->len[w->nthread-1] += lsize;
 }
 
+/**
+ * @brief Prints the charge configuration of the system.
+ *
+ * This function calculates and prints the charge configuration of the system, based on the
+ * world line data. The charges are calculated for each site of the lattice and displayed
+ * according to the following format:
+ *  0: no charge
+ *  -: negative charge (charge = -2)
+ *  +: positive charge (charge = 2)
+ *  2: double charge (charge = -4 or 4)
+ *
+ * @param w Pointer to the world_line_omp structure containing the world line data.
+ */
 void print_charge(world_line_omp* w) {
     int state[4],charge;
     for(int y=0;y<Ly;y++) {
@@ -181,6 +245,17 @@ void print_charge(world_line_omp* w) {
     }
 }
 
+/**
+ * @brief Initializes the world line with no charge configuration.
+ *
+ * This function initializes the world line with a configuration that has no charge.
+ * The function takes two arguments, wx and wy, which are used to adjust the initial state
+ * of the world line.
+ *
+ * @param w Pointer to the world_line_omp structure to be initialized.
+ * @param wx Width of the region in the x direction to be set to 1.
+ * @param wy Width of the region in the y direction to be set to 1.
+ */
 void initial_state_no_charge(world_line_omp* w, int wx, int wy){
     for(int y=0;y<Ly;y++) {
         for(int x=0;x<Lx;x++) {
@@ -208,6 +283,16 @@ void initial_state_no_charge(world_line_omp* w, int wx, int wy){
     }
 }
 
+/**
+ * @brief Initializes the world line with charge 1 configuration.
+ *
+ * This function initializes the world line with a configuration that has a charge of 1.
+ * The function takes one argument, distance, which is used to adjust the initial state
+ * of the world line.
+ *
+ * @param w Pointer to the world_line_omp structure to be initialized.
+ * @param distance Distance between charges in the initial state.
+ */
 void initial_state_charge_1(world_line_omp* w, int distance) {
     for(int y=0;y<Ly;y++) {
         for(int x=0;x<Lx;x++) {
@@ -228,6 +313,16 @@ void initial_state_charge_1(world_line_omp* w, int distance) {
     }
 }
 
+/**
+ * @brief Initializes the world line with charge 1 configuration in diagonal direction.
+ *
+ * This function initializes the world line with a configuration that has a charge of 1
+ * in the diagonal direction. The function takes one argument, distance, which is used
+ * to adjust the initial state of the world line.
+ *
+ * @param w Pointer to the world_line_omp structure to be initialized.
+ * @param distance Distance between charges in the initial state.
+ */
 void initial_state_charge_1_diag(world_line_omp* w, int distance) {
     for(int y=0;y<Ly;y++) {
         for(int x=0;x<Lx;x++) {
@@ -253,6 +348,14 @@ void initial_state_charge_1_diag(world_line_omp* w, int distance) {
     }
 }
 
+/**
+ * @brief Checks if the input state is a reference configuration.
+ *
+ * This function checks if the input state is a reference configuration.
+ *
+ * @param state Pointer to an integer array representing the input state.
+ * @return 1 if the input state is a reference configuration, otherwise 0.
+ */
 static int reference_conf(int* state){
     if(state[0]*state[1]==1){
         if(state[2]*state[3]==1){
@@ -264,6 +367,15 @@ static int reference_conf(int* state){
     return 0;
 }
 
+/**
+ * @brief Counts the local graph number and updates the corresponding arrays.
+ *
+ * This function counts the local graph number and updates the corresponding arrays
+ * nog0_local_number, nog1_local_number, and nog2_local_number.
+ *
+ * @param w Pointer to the world_line_omp structure containing the world line data.
+ * @param m Pointer to the model structure containing the model data.
+ */
 int count_local_number=0;
 unsigned long int* nog0_local_number;
 unsigned long int* nog1_local_number;
@@ -312,6 +424,16 @@ void count_local_graph_number(world_line_omp* w, model* m) {
     count_local_number++;
 }
 
+/**
+ * @brief Saves the local energy of the system to text files.
+ *
+ * This function saves the local energy of the system to three text files named
+ * "nog0", "nog1", and "nog2", corresponding to the three different types of local
+ * graph numbers. The function uses the global parameters Lx, Ly, Lambda, Beta,
+ * Distance, and Seed to create the file names.
+ *
+ * @param w Pointer to the world_line_omp structure containing the world line data.
+ */
 void save_local_energy(world_line_omp* w) {
     int nthread = w->nthread;
     int lsize = Lx*Ly;
@@ -363,6 +485,12 @@ void save_local_energy(world_line_omp* w) {
     fclose(nog2_file);
 }
 
+/**
+ * @brief Counts the number of reference configurations in the given world line.
+ *
+ * @param[in] w Pointer to the world_line_omp structure.
+ * @return The number of reference configurations.
+ */
 int count_reference_conf(world_line_omp* w) {
     int count=0;
     for(int y=0;y<Ly;y++) {
@@ -385,6 +513,13 @@ int count_reference_conf(world_line_omp* w) {
     return count;
 }
 
+/**
+ * @brief Counts the graph numbers for each type in the given world line and model.
+ *
+ * @param[in] w Pointer to the world_line_omp structure.
+ * @param[in] m Pointer to the model structure.
+ * @param[out] nog Array of size 3 to store the graph numbers for each type.
+ */
 void count_graph_number(world_line_omp* w, model* m, int* nog) {
     int nthread = w->nthread;
     int nog0[nthread];
@@ -425,6 +560,12 @@ void count_graph_number(world_line_omp* w, model* m, int* nog) {
     }
 }
 
+/**
+ * @brief Measures the order of the given world line and stores the results in the obs array.
+ *
+ * @param[in] w Pointer to the world_line_omp structure.
+ * @param[out] obs Array of size 2 to store the order measurement results.
+ */
 int* order1_structure_factor = NULL;
 int* order2_structure_factor = NULL;
 void measure_order(world_line_omp* w, double* obs) {
@@ -478,6 +619,12 @@ void measure_order(world_line_omp* w, double* obs) {
     obs[1] = fabs(obs[1])/(2*Lx*Ly);
 }
 
+/**
+ * @brief Performs measurement of the given world line and model.
+ *
+ * @param[in] w Pointer to the world_line_omp structure.
+ * @param[in] m Pointer to the model structure.
+ */
 void measurement(world_line_omp* w, model* m) {
     if(0) {
         int winding_x = 0;
@@ -518,6 +665,9 @@ void measurement(world_line_omp* w, model* m) {
 
 }
 
+/**
+ * @brief Saves the measurement data to a file.
+ */
 void save_data() {
     char data_file_name[128];
     sprintf(data_file_name,"data/data_Lx_%d_Ly_%d_lambda_%.4f_beta_%.2f_distance_%d_seed_%ld.txt",Lx,Ly,Lambda,Beta,Distance,Seed);
