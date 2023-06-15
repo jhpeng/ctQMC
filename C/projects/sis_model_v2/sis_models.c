@@ -168,14 +168,14 @@ int insert_rule_infect_4(int* state) {
 /* graph name : infect_5
 **     2    3
 **     |----|
-**          |
-**     o    |
+**     |    
+**     |    o
 **     0    1
 **
 ** 
 */
 
-int link_rule_infect_5[] = {0,1,1,1,-1,3,1,1};
+int link_rule_infect_5[] = {0,1,0,0,3,-1,1,1};
 int insert_rule_infect_5(int* state) {
     if(state[0]==0 && state[1]==0) {
         return 1;
@@ -186,14 +186,14 @@ int insert_rule_infect_5(int* state) {
 /* graph name : infect_6
 **     2    3
 **     |----|
-**     |    
-**     |    o
+**          |
+**     o    |
 **     0    1
 **
 ** 
 */
 
-int link_rule_infect_6[] = {0,1,0,0,3,-1,1,1};
+int link_rule_infect_6[] = {0,1,1,1,-1,3,1,1};
 int insert_rule_infect_6(int* state) {
     if(state[0]==0 && state[1]==0) {
         return 1;
@@ -302,7 +302,7 @@ static void create_cmf(double* cmf, double* weight, int length) {
 
 model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int nedge, int* edges) {
     int nsite = nnode;
-    int nbond = 6*nedge+3*nnode;
+    int nbond = 7*nedge+3*nnode;
     int mhnspin = 2;
     model* m = malloc_model(nsite,nbond+nnode,mhnspin);
 
