@@ -156,24 +156,36 @@ void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
     for(int i=0;i<(w->nvertices);i++) {
         v = &(sequence[i]);
 
-        // swap between type 1&3 or 2&4
+        // swap between type (1,3,5) or (2,4,6)
         int type = m->bond2type[v->bond];
-        if(type==1 || type==2) {
-            if(gsl_rng_uniform_pos(rng)<0.5) {
-                v->bond += 2*nedge;
+        if((type==1 || type==3) || type==5) {
+            int i_edge = (v->bond) % nedge;
+            double random_value = gsl_rng_uniform_pos(rng)*3.0;
+            if(random_value<1.0) {
+                v->bond = i_edge + nedge*1;
+            } else if(random_value<2.0) {
+                v->bond = i_edge + nedge*3;
+            } else {
+                v->bond = i_edge + nedge*5;
             }
-        } else if(type==3 || type==4) {
-            if(gsl_rng_uniform_pos(rng)<0.5) {
-                v->bond -= 2*nedge;
+        } else if((type==2 || type==4) || type==6) {
+            int i_edge = (v->bond) % nedge;
+            double random_value = gsl_rng_uniform_pos(rng)*3.0;
+            if(random_value<1.0) {
+                v->bond = i_edge + nedge*2;
+            } else if(random_value<2.0) {
+                v->bond = i_edge + nedge*4;
+            } else {
+                v->bond = i_edge + nedge*6;
             }
         }
 
-        // swap between type 6&7
-        else if(type==6) {
+        // swap between type (7,8)
+        else if(type==7) {
             if(gsl_rng_uniform_pos(rng)<0.5) {
                 v->bond += nnode;
             }
-        } else if(type==7) {
+        } else if(type==8) {
             if(gsl_rng_uniform_pos(rng)<0.5) {
                 v->bond -= nnode;
             }
