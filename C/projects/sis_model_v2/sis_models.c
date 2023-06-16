@@ -177,7 +177,7 @@ int insert_rule_infect_4(int* state) {
 
 int link_rule_infect_5[] = {0,1,0,0,3,-1,1,1};
 int insert_rule_infect_5(int* state) {
-    if(state[0]==0 && state[1]==0) {
+    if(state[0]==-1 && state[1]==-1) {
         return 1;
     }
     return 0;
@@ -195,7 +195,7 @@ int insert_rule_infect_5(int* state) {
 
 int link_rule_infect_6[] = {0,1,1,1,-1,3,1,1};
 int insert_rule_infect_6(int* state) {
-    if(state[0]==0 && state[1]==0) {
+    if(state[0]==-1 && state[1]==-1) {
         return 1;
     }
     return 0;
@@ -304,6 +304,9 @@ model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int ne
     int nsite = nnode;
     int nbond = 7*nedge+3*nnode;
     int mhnspin = 2;
+
+    printf("nnode=%d, nedge=%d\n",nnode,nedge);
+
     model* m = malloc_model(nsite,nbond+nnode,mhnspin);
 
     int n=0;
@@ -424,6 +427,18 @@ model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int ne
         printf("(%d,%d) (%d,%d) (%d,%d) (%d,%d) (%d,%d) (%d,%d)\n",k[0],k[1],k[2],k[3],k[4],k[5],k[6],k[7],k[8],k[9],k[10],k[11]);
     }
 */
+
+    printf("--------------- check m->link ----------------\n");
+    for(int i=0;i<20;i++) {
+        for(int j=0;j<4*mhnspin;j++) {
+            if(m->link[i*4*mhnspin+j]<0) {
+                printf("%d ",m->link[i*4*mhnspin+j]);
+            } else {
+                printf(" %d ",m->link[i*4*mhnspin+j]);
+            }
+        }
+        printf("\n");
+    }
 
     return m;
 }

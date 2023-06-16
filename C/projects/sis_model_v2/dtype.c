@@ -5,20 +5,42 @@
 #include "dtype.h"
 
 model* malloc_model(int nsite, int nbond, int mhnspin) {
+    int maxima_number_type=20;
     model* m = (model*)malloc(sizeof(model));
 
     m->bond2type   = (int*)malloc(sizeof(int)*nbond);
     m->bond2hNspin = (int*)malloc(sizeof(int)*nbond);
     m->bond2weight = (double*)malloc(sizeof(double)*nbond);
     m->bond2index  = (int*)malloc(sizeof(int)*nbond*mhnspin);
-    m->link        = (int*)malloc(sizeof(int)*mhnspin*4*20);
-    m->insert      = (insert_rule*)malloc(sizeof(insert_rule)*20);
+    m->link        = (int*)malloc(sizeof(int)*mhnspin*4*maxima_number_type);
+    m->insert      = (insert_rule*)malloc(sizeof(insert_rule)*maxima_number_type);
     m->cmf         = (double*)malloc(sizeof(double)*nbond);
 
     m->nsite = nsite;
     m->nbond = nbond;
     m->mhnspin = mhnspin;
     m->sweight = 0;
+
+    // initialization
+    for(int i=0;i<nbond;i++) {
+        m->bond2type[i] = -1;
+        m->bond2hNspin[i] = 0;
+        m->bond2weight[i] = 0.0;
+
+        for(int j=0;j<mhnspin;j++) {
+            m->bond2index[i*mhnspin+j]=-1;
+        }
+
+        m->cmf[i] = 0;
+    }
+
+    for(int i=0;i<maxima_number_type;i++) {
+        for(int j=0;j<4*mhnspin;j++) {
+            m->link[i*4*mhnspin+j] = -1;
+        }
+
+        m->insert[i] = NULL;
+    }
 
     if(1) {
         printf("-------------------------------------------\n");
