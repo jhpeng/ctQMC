@@ -467,16 +467,16 @@ int main(int argc, char** argv) {
 
     if(running_mode==0) {
         for(int i=0;i<(w->nsite);i++) w->istate[i] = -1;
-        //w->istate[nearest_nb_arg_max_degree()]=1;
-        w->istate[71]=1;
+        w->istate[nearest_nb_arg_max_degree()]=1;
+        //w->istate[71]=1;
 
         initial_condition_type=0;
         final_condition_type=1;
         nocheck_for_measurement=0;
     } else if(running_mode==1) {
         for(int i=0;i<(w->nsite);i++) w->istate[i] = -1;
-        //w->istate[nearest_nb_arg_max_degree()]=1;
-        w->istate[71]=1;
+        w->istate[nearest_nb_arg_max_degree()]=1;
+        //w->istate[71]=1;
 
         initial_condition_type=1;
         final_condition_type=1;
