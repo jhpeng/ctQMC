@@ -146,7 +146,7 @@ void remove_vertices(world_line* w) {
 
 void swapping_graphs(world_line* w, model* m, gsl_rng* rng) {
     int nnode = m->nsite;
-    int nedge = (m->nbond-3*nnode)/6;
+    int nedge = (m->nbond-3*nnode)/7;
     vertex* v;
 
     vertex* sequence = w->sequenceB;
@@ -234,6 +234,30 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng) {
             v = &(sequence1[k]);
             for(i_site=0;i_site<(v->hNspin);i_site++) {
                 index = m->bond2index[v->bond*mhnspin+i_site];
+#if 0
+                if(index<0 || index>=nsite) {
+                    printf("index = %d \n",index);
+                    printf("------- vertex information ------- \n");
+                    printf("tau    = %.16lf \n",v->tau);
+                    printf("bond   = %d \n",v->bond);
+                    printf("hNspin (w) = %d \n",v->hNspin);
+                    printf("hNspin (m) = %d \n",m->bond2hNspin[v->bond]);
+
+                    printf("state (");
+                    for(int i_state=0;i_state<2*(v->hNspin);i_state++) {
+                        printf(" %d",v->state[i_state]);
+                    }
+                    printf(")\n");
+
+                    printf("indices (");
+                    for(int i_state=0;i_state<(v->hNspin);i_state++) {
+                        printf(" %d",m->bond2index[v->bond*mhnspin+i_state]);
+                    }
+                    printf(")\n");
+
+                    exit(-1);
+                }
+#endif
                 pstate[index] = v->state[v->hNspin+i_site];
             }
 
