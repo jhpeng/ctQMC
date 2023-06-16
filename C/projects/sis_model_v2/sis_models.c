@@ -307,89 +307,26 @@ model* sis_model_uniform_infection(double alpha, double gamma, int nnode, int ne
     model* m = malloc_model(nsite,nbond+nnode,mhnspin);
 
     int n=0;
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
+    for(int i_type=0;i_type<7;i_type++){
+        for(int i_edge=0;i_edge<nedge;i_edge++) {
+            int i = edges[2*i_edge+0];
+            int j = edges[2*i_edge+1];
 
-        m->bond2type[n]   = 0;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = 2*alpha/3.0;
-        m->sweight += 2*alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
-    }
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
+            m->bond2type[n]   = i_type;
+            m->bond2hNspin[n] = 2;
 
-        m->bond2type[n]   = 1;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha/3.0;
-        m->sweight += alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
-    }
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
+            if(i_type==0) {
+                m->bond2weight[n] = 2*alpha/3.0;
+                m->sweight += 2*alpha/3.0;
+            } else {
+                m->bond2weight[n] = alpha/3.0;
+                m->sweight += alpha/3.0;
+            }
 
-        m->bond2type[n]   = 2;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha/3.0;
-        m->sweight += alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
-    }
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
-
-        m->bond2type[n]   = 3;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha/3.0;
-        m->sweight += alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
-    }
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
-
-        m->bond2type[n]   = 4;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha/3.0;
-        m->sweight += alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
-    }
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
-
-        m->bond2type[n]   = 5;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha/3.0;
-        m->sweight += alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
-    }
-    for(int i_edge=0;i_edge<nedge;i_edge++) {
-        int i = edges[2*i_edge+0];
-        int j = edges[2*i_edge+1];
-
-        m->bond2type[n]   = 6;
-        m->bond2hNspin[n] = 2;
-        m->bond2weight[n] = alpha/3.0;
-        m->sweight += alpha/3.0;
-        m->bond2index[n*mhnspin+0] = i;
-        m->bond2index[n*mhnspin+1] = j;
-        n++;
+            m->bond2index[n*mhnspin+0] = i;
+            m->bond2index[n*mhnspin+1] = j;
+            n++;
+        }
     }
     for(int i=0;i<nnode;i++) {
 
