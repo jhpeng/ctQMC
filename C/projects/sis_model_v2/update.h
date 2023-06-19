@@ -16,6 +16,8 @@ void insert_vertices(world_line* w, model* m, gsl_rng* rng);
 
 void clustering(world_line* w, model* m);
 
+void cluster_statistic(world_line* w);
+
 void flip_cluster(world_line* w, gsl_rng* rng);
 
 int check_periodic(world_line* w, model* m);

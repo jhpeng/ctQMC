@@ -365,6 +365,67 @@ void clustering(world_line* w, model* m) {
 */
 }
 
+int  cluster_statistic_length=0;
+int* cluster_statistic_count=NULL;
+void cluster_statistic(world_line* w) {
+    int hNspin,idv,idr,i,j;
+
+    int mnspin = w->mnspin;
+    int length = w->length;
+
+    if(length*mnspin>cluster_statistic_length) {
+        cluster_statistic_length = length*mnspin;
+        if(cluster_statistic_count!=NULL)
+            free(cluster_statistic_count);
+
+        cluster_statistic_count = (int*)malloc(sizeof(int)*cluster_statistic_length);
+
+        if(cluster_statistic_count==NULL) {
+            printf("Memory Allocating Error : update.c (cluster_statistic)\n");
+            exit(-1);
+        }
+    }
+
+    for(int i=0;i<cluster_statistic_length;i++) {
+        cluster_statistic_count[i] = 1;
+    }
+
+    vertex* sequence = w->sequenceB;
+    if(w->flag) 
+        sequence = w->sequenceA;
+
+    int number_of_free_cluster=0;
+    int number_of_cluster=0;
+    int size_of_free_cluster=0;
+    int size_of_cluster=0;
+    for(i=0;i<(w->nvertices);i++) {
+        hNspin = (sequence[i]).hNspin;
+
+        for(j=0;j<2*hNspin;j++) {
+            idv = i*mnspin+j;
+            idr = root(w->cluster,idv);
+            if(cluster_statistic_count[idr]) {
+                number_of_cluster++;
+
+                if(w->weight[idr]>0) {
+                    number_of_free_cluster++;
+                    size_of_free_cluster += w->weight[idr];
+                    size_of_cluster += w->weight[idr];
+                } else {
+                    size_of_cluster -= w->weight[idr];
+                }
+
+                cluster_statistic_count[idr]=0;
+            }
+        }
+    }
+    
+    double ratio1 = ((double)number_of_free_cluster)/((double)number_of_cluster);
+    double ratio2 = ((double)size_of_free_cluster)/((double)size_of_cluster);
+    printf("number of cluster = %d, number of free cluster = %d, ratio = %.16lf \n",number_of_cluster,number_of_free_cluster,ratio1);
+    printf("size of cluster = %d, size of free cluster = %d, ratio = %.16lf \n",size_of_cluster,size_of_free_cluster,ratio2);
+}
+
 void flip_cluster(world_line* w, gsl_rng* rng) {
     int* state;
     int hNspin,idv,idr,id,p,i,j;
@@ -384,7 +445,7 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             idv = i*mnspin+j;
             idr = root(w->cluster,idv);
             if(w->weight[idr]>0) {
-                if(gsl_rng_uniform_pos(rng)<0.5) {
+                if(gsl_rng_uniform_pos(rng)<1.0) {
                     w->weight[idr] =  0;
                 } else {
                     w->weight[idr] = -1;

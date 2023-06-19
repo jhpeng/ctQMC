@@ -177,7 +177,7 @@ void boundary_condition_final_state(world_line* w, model* m, double p, int type,
             }
         }
     } else if(type==2) {
-        // set frozen nodes to their initial state with tau=1
+        // set frozen nodes to their final state with tau=1
         for(int i=0;i<nnode;i++) {
             if(pstate[i]==-1) {
                 (sequence[n]).tau      = 1.0;
@@ -488,7 +488,7 @@ int main(int argc, char** argv) {
         final_condition_type=2;
         nocheck_for_measurement=1;
     } else {
-        printf("There is no running mode %d!\n",running_mode);
+        printf("There is no such running mode %d!\n",running_mode);
         exit(1);
     }
 
@@ -501,6 +501,9 @@ int main(int argc, char** argv) {
         boundary_condition_initial_state(w,m,initial_condition_type,rng);
         boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
         clustering(w,m);
+
+        cluster_statistic(w);
+
         flip_cluster(w,rng);
         if((i+1)%1000==0) {
             printf("themral : %d\n",i+1);
