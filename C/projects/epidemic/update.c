@@ -410,7 +410,7 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
             idv = i*mnspin+j;
             idr = root(w->cluster,idv);
             if(w->weight[idr]>0) {
-                if(gsl_rng_uniform_pos(rng)<0.5) {
+                if(gsl_rng_uniform_pos(rng)<1.0) {
                     w->weight[idr] =  0;
                 } else {
                     w->weight[idr] = -1;
