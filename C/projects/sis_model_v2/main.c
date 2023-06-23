@@ -502,7 +502,7 @@ int main(int argc, char** argv) {
         boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
         clustering(w,m);
 
-        cluster_statistic(w);
+        //cluster_statistic(w);
 
         flip_cluster(w,rng);
         if((i+1)%1000==0) {
