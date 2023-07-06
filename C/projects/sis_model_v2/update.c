@@ -477,3 +477,155 @@ void flip_cluster(world_line* w, gsl_rng* rng) {
         }
     }
 }
+
+void remove_only_fixed_vertices(world_line* w) {
+    int hNspin,idv,idr,i,j,k;
+
+    int mnspin = w->mnspin;
+
+    vertex* v;
+
+    vertex* sequence1 = w->sequenceB;
+    vertex* sequence2 = w->sequenceA;
+    if(w->flag) {
+        sequence1 = w->sequenceA;
+        sequence2 = w->sequenceB;
+    }
+
+    ninfection=0;
+    nrecover=0;
+
+    int check_save;
+    k=0;
+    for(i=0;i<w->nvertices;i++) {
+        v = &(sequence1[i]);
+        hNspin = v->hNspin;
+        check_save = 0;
+
+        for(j=0;j<hNspin;j++) {
+            if(v->state[j]!=v->state[j+v->hNspin]) {
+                check_save = 1;
+            } 
+        }
+
+        for(j=0;j<2*hNspin;j++) {
+            idv = i*mnspin+j;
+            idr = root(w->cluster,idv);
+            if(w->weight[idr]==0) {
+                check_save = 1;
+            }
+        }
+
+        if(check_save) {
+            copy_vertex(&(sequence2[k]),&(sequence1[i]));
+            k++;
+
+            if(v->hNspin==1) {
+                nrecover++;
+            } else if(v->hNspin==2) {
+                ninfection++;
+            }
+        }
+    }
+    w->nvertices = k;
+    w->flag = !(w->flag);
+}
+
+void snapshot_show(world_line* w, model* m) {
+    vertex* v;
+    int idv,idr;
+    int bond,hNspin,type,index;
+    int* indices;
+    double tau;
+
+    int nsite = w->nsite;
+    int mnspin = w->mnspin;
+
+    vertex* sequence = w->sequenceB;
+    if(w->flag) 
+        sequence = w->sequenceA;
+
+    printf("------------------ snapshot -------------------\n");
+    printf("data format: (type tau [node_id, ] free_cluster) \n");
+
+    for(int i=0;i<nsite;i++) {
+        if(w->istate[i]>0) {
+            type  = 10;
+            tau   = 0.0;
+            index = i;
+            printf("%d %f %d 0 \n",type,tau,index);
+        }
+    }
+
+    for(int i=0;i<(w->nvertices);i++) {
+        v       = &(sequence[i]);
+        bond    = v->bond;
+        hNspin  = v->hNspin;
+        tau     = v->tau;
+        type    = m->bond2type[bond];
+        indices = &(m->bond2index[bond*(m->mhnspin)]);
+
+        int check_condition = 0;
+
+        for(int j=0;j<hNspin;j++) {
+            if(v->state[j]!=v->state[j+v->hNspin]) {
+                check_condition = 1;
+            } 
+        }
+
+        for(int j=0;j<2*hNspin;j++) {
+            idv = i*mnspin+j;
+            idr = root(w->cluster,idv);
+            if(w->weight[idr]==0) {
+                check_condition = 1;
+            }
+        }
+
+        if(check_condition) {
+            printf("%d %f ",type,tau);
+
+            for(int j=0;j<hNspin;j++) {
+                index = indices[j];
+                printf("%d ",index);
+            }
+
+            int free_cluster=0;
+            for(int j=0;j<2*hNspin;j++) {
+                idv = i*mnspin+j;
+                idr = root(w->cluster,idv);
+                if(w->weight[idr]==0) {
+                    free_cluster=1;
+                }
+            }
+            printf("%d ",free_cluster);
+
+            printf("\n");
+        }
+    }
+
+    for(int i=0;i<nsite;i++) {
+        int free_cluster=0;
+        idv = w->last[i];
+        if(idv!=-1) {
+            idr = root(w->cluster,idv);
+            if(w->weight[idr]==0) {
+                free_cluster=1;
+            }
+        }
+
+        if(w->pstate[i]>0) {
+            type = 11;
+            tau  = 1.0;
+            index = i;
+
+            printf("%d %f %d %d \n",type,tau,index,free_cluster);
+        } else if(free_cluster) {
+            type = 11;
+            tau  = 1.0;
+            index = i;
+
+            printf("%d %f %d %d \n",type,tau,index,free_cluster);
+        }
+    }
+}
+

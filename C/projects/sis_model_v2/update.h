@@ -10,6 +10,8 @@ double nrecover_value();
 
 void remove_vertices(world_line* w);
 
+void remove_only_fixed_vertices(world_line* w);
+
 void swapping_graphs(world_line* w, model* m, gsl_rng* rng);
 
 void insert_vertices(world_line* w, model* m, gsl_rng* rng);
@@ -20,6 +22,8 @@ void cluster_statistic(world_line* w);
 
 void flip_cluster(world_line* w, gsl_rng* rng);
 
-int check_periodic(world_line* w, model* m);
+//int check_periodic(world_line* w, model* m);
+
+void snapshot_show(world_line* w, model* m);
 
 #endif

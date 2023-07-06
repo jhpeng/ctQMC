@@ -541,6 +541,12 @@ int main(int argc, char** argv) {
         }
     }
 
+    // print the sanpshot of final state
+    if(1) {
+        //remove_only_fixed_vertices(w);
+        snapshot_show(w,m);
+    }
+
     // free memory
     free(infected_ratio);
     free(time_list);
