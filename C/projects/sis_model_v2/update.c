@@ -366,12 +366,60 @@ void clustering(world_line* w, model* m) {
 }
 
 int  cluster_statistic_length=0;
+int  cluster_statistic_counter=0;
 int* cluster_statistic_count=NULL;
-void cluster_statistic(world_line* w) {
-    int hNspin,idv,idr,i,j;
+int* cluster_statistic_fcluster=NULL;
+int* cluster_statistic_infection=NULL;
+double* cluster_statistic_taus=NULL;
+double* cluster_statistic_infection_size=NULL;
+void cluster_statistic(world_line* w, model* m) {
+    int idv,idr,i,j,index;
+    int bond,hNspin;
+    double tau;
+    int* indices;
+    int* state;
+    vertex* v = NULL;
 
+    int nsite = w->nsite;
     int mnspin = w->mnspin;
     int length = w->length;
+
+    if(cluster_statistic_taus==NULL) {
+        cluster_statistic_taus = (double*)malloc(sizeof(double)*nsite);
+
+        if(cluster_statistic_taus==NULL) {
+            printf("Memory Allocating Error : update.c (cluster_statistic)\n");
+            exit(-1);
+        }
+
+        cluster_statistic_infection_size = (double*)malloc(sizeof(double)*nsite);
+
+        if(cluster_statistic_infection_size==NULL) {
+            printf("Memory Allocating Error : update.c (cluster_statistic)\n");
+            exit(-1);
+        }
+
+        cluster_statistic_fcluster = (int*)malloc(sizeof(int)*nsite);
+
+        if(cluster_statistic_fcluster==NULL) {
+            printf("Memory Allocating Error : update.c (cluster_statistic)\n");
+            exit(-1);
+        }
+
+        cluster_statistic_infection = (int*)malloc(sizeof(int)*nsite);
+
+        if(cluster_statistic_infection==NULL) {
+            printf("Memory Allocating Error : update.c (cluster_statistic)\n");
+            exit(-1);
+        }
+    }
+
+    int* fcluster = cluster_statistic_fcluster;
+    int* isize = cluster_statistic_infection;
+    for(i=0;i<nsite;i++) {
+        fcluster[i] = 0;
+        isize[i] = 0;
+    }
 
     if(length*mnspin>cluster_statistic_length) {
         cluster_statistic_length = length*mnspin;
@@ -386,7 +434,7 @@ void cluster_statistic(world_line* w) {
         }
     }
 
-    for(int i=0;i<cluster_statistic_length;i++) {
+    for(i=0;i<cluster_statistic_length;i++) {
         cluster_statistic_count[i] = 1;
     }
 
@@ -398,8 +446,15 @@ void cluster_statistic(world_line* w) {
     int number_of_cluster=0;
     int size_of_free_cluster=0;
     int size_of_cluster=0;
+    double cluster_size_in_time=0;
+    double infection_size_in_time=0;
     for(i=0;i<(w->nvertices);i++) {
-        hNspin = (sequence[i]).hNspin;
+        v       = &(sequence[i]);
+        tau     = v->tau;
+        bond    = v->bond;
+        hNspin  = v->hNspin;
+        indices = &(m->bond2index[bond*(m->mhnspin)]);
+        state   = v->state;
 
         for(j=0;j<2*hNspin;j++) {
             idv = i*mnspin+j;
@@ -418,12 +473,48 @@ void cluster_statistic(world_line* w) {
                 cluster_statistic_count[idr]=0;
             }
         }
+
+        for(j=0;j<hNspin;j++) {
+            index = indices[j];
+            idv = i*mnspin+j+hNspin;
+
+            if(fcluster[index]) {
+                cluster_size_in_time += (tau - cluster_statistic_taus[index]);
+                fcluster[index] = 0;
+            }
+
+            idr = root(w->cluster,idv);
+            if(w->weight[idr]>0) {
+                cluster_statistic_taus[index] = tau;
+                fcluster[index] = 1;
+            }
+
+            if(isize[index]) {
+                infection_size_in_time += (tau - cluster_statistic_infection_size[index]);
+                isize[index] = 0;
+            }
+
+            if(state[j+hNspin]==1) {
+                cluster_statistic_infection_size[index] = tau;
+                isize[index] = 1;
+            }
+        }
     }
     
     double ratio1 = ((double)number_of_free_cluster)/((double)number_of_cluster);
     double ratio2 = ((double)size_of_free_cluster)/((double)size_of_cluster);
+    cluster_statistic_counter++;
+    printf("---------------------------------------------------\n");
+    printf("n = %d \n", cluster_statistic_counter);
     printf("number of cluster = %d, number of free cluster = %d, ratio = %.16lf \n",number_of_cluster,number_of_free_cluster,ratio1);
     printf("size of cluster = %d, size of free cluster = %d, ratio = %.16lf \n",size_of_cluster,size_of_free_cluster,ratio2);
+    printf("size of cluster (t) = %lf\n",cluster_size_in_time);
+    printf("infection size in time (t) = %lf\n",infection_size_in_time);
+
+    char filename[128] = "cluster_statistic.txt";
+    FILE* sfile = fopen(filename,"a");
+    fprintf(sfile,"%lf %lf \n", cluster_size_in_time, infection_size_in_time);
+    fclose(sfile);
 }
 
 void flip_cluster(world_line* w, gsl_rng* rng) {
@@ -531,7 +622,7 @@ void remove_only_fixed_vertices(world_line* w) {
     w->flag = !(w->flag);
 }
 
-void snapshot_show(world_line* w, model* m) {
+void snapshot_show(world_line* w, model* m, FILE* file) {
     vertex* v;
     int idv,idr;
     int bond,hNspin,type,index;
@@ -554,6 +645,7 @@ void snapshot_show(world_line* w, model* m) {
             tau   = 0.0;
             index = i;
             printf("%d %f %d 0 \n",type,tau,index);
+            fprintf(file,"%d %f %d 0 \n",type,tau,index);
         }
     }
 
@@ -583,10 +675,12 @@ void snapshot_show(world_line* w, model* m) {
 
         if(check_condition) {
             printf("%d %f ",type,tau);
+            fprintf(file,"%d %f ",type,tau);
 
             for(int j=0;j<hNspin;j++) {
                 index = indices[j];
                 printf("%d ",index);
+                fprintf(file,"%d ",index);
             }
 
             int free_cluster=0;
@@ -597,9 +691,8 @@ void snapshot_show(world_line* w, model* m) {
                     free_cluster=1;
                 }
             }
-            printf("%d ",free_cluster);
-
-            printf("\n");
+            printf("%d \n",free_cluster);
+            fprintf(file,"%d \n",free_cluster);
         }
     }
 
@@ -619,12 +712,14 @@ void snapshot_show(world_line* w, model* m) {
             index = i;
 
             printf("%d %f %d %d \n",type,tau,index,free_cluster);
+            fprintf(file,"%d %f %d %d \n",type,tau,index,free_cluster);
         } else if(free_cluster) {
             type = 11;
             tau  = 1.0;
             index = i;
 
             printf("%d %f %d %d \n",type,tau,index,free_cluster);
+            fprintf(file,"%d %f %d %d \n",type,tau,index,free_cluster);
         }
     }
 }

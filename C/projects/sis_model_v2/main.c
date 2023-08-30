@@ -502,7 +502,7 @@ int main(int argc, char** argv) {
         boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
         clustering(w,m);
 
-        //cluster_statistic(w);
+        //cluster_statistic(w,m);
 
         flip_cluster(w,rng);
         if((i+1)%1000==0) {
@@ -534,6 +534,7 @@ int main(int argc, char** argv) {
 
         if((ninfected_initial_state(w)==1 && ninfected_final_state(w)>nif) || nocheck_for_measurement) {
             ntrial_ave+=ntrial;
+            cluster_statistic(w,m);
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
 
@@ -542,9 +543,24 @@ int main(int argc, char** argv) {
     }
 
     // print the sanpshot of final state
-    if(1) {
-        //remove_only_fixed_vertices(w);
-        snapshot_show(w,m);
+    if(0) {
+        char snapshot_filename[128];
+        for(int i=0;i<10;i++){
+            remove_vertices(w);
+            swapping_graphs(w,m,rng);
+            insert_vertices(w,m,rng);
+            boundary_condition_initial_state(w,m,initial_condition_type,rng);
+            boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
+            clustering(w,m);
+            flip_cluster(w,rng);
+
+            sprintf(snapshot_filename,"snapshot_%d.out",i);
+            FILE* snapshot_file = fopen(snapshot_filename,"w");
+
+            snapshot_show(w,m,snapshot_file);
+
+            fclose(snapshot_file);
+        }
     }
 
     // free memory
