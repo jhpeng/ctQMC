@@ -528,13 +528,17 @@ int main(int argc, char** argv) {
             boundary_condition_initial_state(w,m,initial_condition_type,rng);
             boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
             clustering(w,m);
+
+            if((i+1)==nskip){
+                cluster_statistic(w,m);
+            }
+
             flip_cluster(w,rng);
         }
         ntrial++;
 
         if((ninfected_initial_state(w)==1 && ninfected_final_state(w)>nif) || nocheck_for_measurement) {
             ntrial_ave+=ntrial;
-            cluster_statistic(w,m);
             measurement(w,m,time_list,ntime,block_size);
             i_sweep++;
 
