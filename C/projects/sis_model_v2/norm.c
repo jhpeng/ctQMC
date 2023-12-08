@@ -90,25 +90,90 @@ void realloc_conf(conf* c, int size_new) {
 }
 
 void show_conf(conf* c) {
+    int nsite = c->nsite;
+    int size  = c->size;
 
+    printf("--------------- show configuration --------------\n");
+    printf("nsite = %d \n",nsite);
+
+    printf("------------------------------\n");
+    for(int i=0; i<nsite; i++) {
+        int length = c->length[i];
+        if(i<10) {
+            printf("%d    | ",i);
+        } else if(i<100) {
+            printf("%d   | ",i);
+        } else if(i<1000) {
+            printf("%d  | ",i);
+        } else {
+            printf("%d | ",i);
+        }
+
+        for(int j=0; j<length; j++) {
+            int sigma = c->sigma[size*i+j];
+            double tau = c->tau[size*i+j];
+
+            //printf("%d ",sigma);
+            if(sigma==1) {
+                printf("(+) ");
+            } else {
+                printf("(-) ");
+            }
+            printf("%.3f | ",tau);
+        }
+        printf("\n");
+    }
+}
+
+void inner_product(conf* c1, conf* c2) {
+    if(c1->nsite != c2->nsite) {
+        printf("c1 and c2 should have the same nsite!\n");
+        return;
+    }
+
+    int nsite = c1->nsite;
+    double z=0;
+
+    int length1, length2;
+    int size1, size2;
+    int sigma1, sigma2;
+    double tau1, tau2;
+    for(int i=0; i<nsite; i++) {
+        length1 = c1->length[i];
+        length2 = c2->length[i];
+
+        size1 = c1->size;
+        size2 = c2->size;
+
+        sigma1 = c1->sigma[size1*i+0];
+        sigma2 = c2->sigma[size2*i+0];
+
+        tau1 = c1->tau[size1*i+0];
+        tau2 = c2->tau[size2*i+0];
+    }
 }
 
 void world_line_to_conf(conf* c, world_line* w, model* m) {
     vertex* v;
-    int bond, hNspin, type, index, size;
+    int bond, hNspin, size;
+    //int index, type;
     int* indices;
     int* state;
     double tau;
 
     int nsite  = w->nsite;
-    int mnspin = w->mnspin;
+    //int mnspin = w->mnspin;
 
     vertex* sequence = w->sequenceB;
     if(w->flag)
         sequence = w->sequenceA;
 
     for(int i=0; i<nsite; i++) {
-        c->length[i] = 0;
+        size = c->size;
+
+        c->sigma[size*i+0] = w->istate[i];
+        c->tau[size*i+0] = 0;
+        c->length[i] = 1;
     }
 
     for(int i=0; i<(w->nvertices); i++) {
@@ -130,6 +195,7 @@ void world_line_to_conf(conf* c, world_line* w, model* m) {
                 }
 
                 c->sigma[size*indices[j]+length] = state[j+hNspin];
+                c->tau[size*indices[j]+length] = tau;
                 c->length[indices[j]] = length+1;
             }
         }    

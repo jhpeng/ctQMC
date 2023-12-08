@@ -513,7 +513,7 @@ void cluster_statistic(world_line* w, model* m) {
 
     char filename[128] = "cluster_statistic.txt";
     FILE* sfile = fopen(filename,"a");
-    fprintf(sfile,"%lf %lf \n", cluster_size_in_time, infection_size_in_time);
+    fprintf(sfile,"%.12e %.12e %d \n", cluster_size_in_time, infection_size_in_time, w->nvertices);
     fclose(sfile);
 }
 

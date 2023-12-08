@@ -9,6 +9,7 @@
 #include "update.h"
 #include "networks.h"
 #include "estimator.h"
+#include "norm.h"
 
 // Returns the initial number of infected nodes in the world line
 int ninfected_initial_state(world_line* w) {
@@ -493,6 +494,8 @@ int main(int argc, char** argv) {
     }
 
     // thermalization
+    time_t thermal_cpu_time_start = clock();
+    time_t thermal_cpu_time_end;
     w->beta = T;
     for(int i=0;i<thermal;i++) {
         remove_vertices(w);
@@ -506,7 +509,11 @@ int main(int argc, char** argv) {
 
         flip_cluster(w,rng);
         if((i+1)%1000==0) {
-            printf("themral : %d\n",i+1);
+            thermal_cpu_time_end = clock();
+            printf("themral : %d ",i+1);
+            printf("| cpu time on this block : %.6e (s) ",(double)(thermal_cpu_time_end-thermal_cpu_time_start)/CLOCKS_PER_SEC);
+            printf("| remaining time estimate : %.6e\n",(double)(thermal_cpu_time_end-thermal_cpu_time_start)/CLOCKS_PER_SEC/1000*(thermal-i));
+            thermal_cpu_time_start = clock();
         }
     }
     printf("end of thermalization!\n");
@@ -566,6 +573,31 @@ int main(int argc, char** argv) {
             fclose(snapshot_file);
         }
     }
+
+    // calculate the norm
+    if(1) {
+        conf* c1 = malloc_conf(2000,nnode);
+        conf* c2 = malloc_conf(2000,nnode);
+
+        world_line_to_conf(c1,w,m); 
+        for(int i=0;i<10;i++){
+            remove_vertices(w);
+            swapping_graphs(w,m,rng);
+            insert_vertices(w,m,rng);
+            boundary_condition_initial_state(w,m,initial_condition_type,rng);
+            boundary_condition_final_state(w,m,pnif,final_condition_type,rng);
+            clustering(w,m);
+            flip_cluster(w,rng);
+
+        }
+        world_line_to_conf(c2,w,m); 
+        show_conf(c1);
+        show_conf(c2);
+    
+        free_conf(c1);
+        free_conf(c2);
+    }
+    
 
     // free memory
     free(infected_ratio);
